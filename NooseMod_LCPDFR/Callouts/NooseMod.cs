@@ -237,6 +237,11 @@ namespace NooseMod_LCPDFR.Callouts
         /// Settings File
         /// </summary>
         internal SettingsFile SettingsIni = SettingsFile.Open("LCPDFR\\Plugins\\NooseMod.ini");
+
+        /// <summary>
+        /// NOOSE Vehicle Model Names
+        /// </summary>
+        internal string[] nooseVehicleModels = new string[3] { "NOOSE", "POLPATRIOT", "NSTOCKADE" };
         #endregion
 
         #region LCPDFR External Procedures
@@ -352,6 +357,7 @@ namespace NooseMod_LCPDFR.Callouts
 
             // Time check, if a mission is called on a specified time
             Mission currentMissionToPlayNow = controller.missionVariableCheckup(lastPlayedMission);
+            Log.Debug("Initializing mission with the name: " + currentMissionToPlayNow.Name, this);
 
             // Get Mission Time
             TimeSpan currentTime = World.CurrentDayTime;
@@ -375,25 +381,27 @@ namespace NooseMod_LCPDFR.Callouts
                     //  but it will limit access to some features, for example, if you have The Wasteland plugin.
                     if (currentTime >= interval1 && currentTime <= interval2)
                     {
+                        Log.Debug("Mission started between " + interval1 + " and " + interval2, this);
                         activeMission = controller.PlayMission(lastPlayedMission);
                     }
 
                     // Check if the mission starts at 00:00, as from 23:59 it will reset to 00:00
                     else if (currentTime >= interval1 && currentTime <= interval3 && currentTime >= new TimeSpan(0, 0, 0) && currentTime <= interval2)
                     {
+                        Log.Debug("Mission started between " + interval1 + " and " + interval2, this);
                         activeMission = controller.PlayMission(lastPlayedMission);
                     }
 
                     // No resources loaded, so if not within specified time, end it from the call base
-                    else { base.End(); return; }
+                    else { Log.Debug("Mission ended: " + currentTime + " is not in specified interval", this); base.End(); return; }
                 }
 
                 // Start immediately the mission if the mission time is not specified
-                else { activeMission = controller.PlayMission(lastPlayedMission); }
+                else { Log.Debug("Mission started without time check", this); activeMission = controller.PlayMission(lastPlayedMission); }
             }
 
                 // End the callout from the base if the save file is exceeding the mission list
-            else { base.End(); return; }
+            else { Log.Debug("Mission ended: " + lastPlayedMission + " exceeds the list of " + controller.loadedMissions.Count + " missions", this); base.End(); return; }
 
             // Use Mission Location to start
             spawnPosition = controller.entryLoc.Position;
@@ -404,6 +412,7 @@ namespace NooseMod_LCPDFR.Callouts
 
             // Call it in
             int i = Common.GetRandomValue(0, 4);
+            Log.Debug("Loaded audio and text ID " + i, this);
             switch (i)
             {
                 case 0:
@@ -460,8 +469,14 @@ namespace NooseMod_LCPDFR.Callouts
             // Grab a check if using TBoGT weapons
             bool isUsingTbogtWeapons = SettingsIni.GetValueBool("EnableTBoGTWeapons", "GlobalSettings", false);
 
+            if (isUsingTbogtWeapons) // Debug only
+            Log.Debug("OnCalloutAccepted: TBoGT Weapons used in platform " + Game.CurrentEpisode.ToString(), this);
+
             // Grab a check if Biker Gangs are used in this callout
             bool isBikerGangUsedInCallout = SettingsIni.GetValueBool("SwapCriminalsToBikerGangMembers", "GlobalSettings", false);
+
+            if (isBikerGangUsedInCallout) // Debug only
+                Log.Debug("OnCalloutAccepted: Biker Gang is used in this callout", this);
 
             // Assign terrorists
             try
@@ -646,7 +661,7 @@ namespace NooseMod_LCPDFR.Callouts
                 else // If no partner, a NOOSE cruiser will be added near you with SWATs inside and
                     // made tracks to the crime scene
                 {
-                    nooseVeh1 = new LVehicle(World.GetNextPositionOnStreet(LPlayer.LocalPlayer.Ped.Position), "NOOSE");
+                    nooseVeh1 = new LVehicle(World.GetNextPositionOnStreet(LPlayer.LocalPlayer.Ped.Position), Common.GetRandomCollectionValue<string>(nooseVehicleModels));
                     SquadTroops = new LPed[4] 
                     {
                         new LPed(nooseVeh1.Position, "M_Y_SWAT", LPed.EPedGroup.Cop),
@@ -695,7 +710,7 @@ namespace NooseMod_LCPDFR.Callouts
                 // Mission ready: register state callback and rock and roll!
                 base.RegisterStateCallback(MissionState.GoingToMissionLocation, new Action(WaitingForPlayer));
                 base.RegisterStateCallback(MissionState.WaitForTeamInsertion, new Action(DispatchTeam));
-                base.RegisterStateCallback(MissionState.DuringMission, new Action(InitiateShootout));
+                base.RegisterStateCallback(MissionState.Initialize, new Action(InitiateShootout));
                 base.RegisterStateCallback(MissionState.Off, new Action(End));
                 // OnDuty is not assigned
                 Functions.PrintText(Functions.GetStringFromLanguageFile("CALLOUT_GET_TO_CRIME_SCENE"), 8000);
@@ -707,6 +722,8 @@ namespace NooseMod_LCPDFR.Callouts
                     "Confirmed terrorist activity. Proceed with extreme prejudice.",
                     Functions.GetStringFromLanguageFile("POLICE_SCANNER_CONTROL"));
                 }
+
+                Log.Debug("OnCalloutAccepted: Initialized", this);
             }
             base.State = mission;
             return isReadyForMission;
@@ -725,6 +742,8 @@ namespace NooseMod_LCPDFR.Callouts
 
             // Decrement loaded mission (to prevent loading the next mission)
             lastPlayedMission--;
+
+            Log.Debug("OnCalloutNotAccepted: Resources cleared", this);
         }
 
 #region Actions
@@ -775,6 +794,7 @@ namespace NooseMod_LCPDFR.Callouts
                             Functions.AddTextToTextwall(Functions.GetStringFromLanguageFile("CALLOUT_NOOSEMOD_HOSTAGES_BEING_EXECUTED"), Functions.GetStringFromLanguageFile("POLICE_SCANNER_CONTROL"));
                             Functions.PlaySoundUsingPosition("ATTENTION_ALL_UNITS INS_WEVE_GOT CRIM_MULTIPLE_INJURIES I_REPEAT CRIM_MULTIPLE_INJURIES IN_OR_ON_POSITION", this.spawnPosition);
                         }
+                        Log.Debug("WaitingForPlayer: Hostage executed by a terrorist, current kills: " + hostage_kill_list, this);
                     }
                     else
                     {
@@ -787,12 +807,14 @@ namespace NooseMod_LCPDFR.Callouts
             }
             // Change enum state when outside the loop
             mission = MissionState.WaitForTeamInsertion;
+            Log.Debug("WaitingForPlayer: Player has arrived the scene with elapsed time: " + time.ElapsedTime, this);
 
             // Create ambient police force (roadblocks and cops with Carbine Rifle and Semi-Auto Shotgun)
             // This is defined through the Safe Mode in the INI file
             bool safeMode = SettingsIni.GetValueBool("SafeMode", "GlobalSettings", false);
             if (safeMode == false)
             {
+                Log.Debug("WaitingForPlayer: Safe Mode is " + safeMode, this);
                 LVehicle copCarBlock1 = new LVehicle(World.GetPositionAround(spawnPosition,6.5f), "POLICE");
                 copCarBlock1.PlaceOnGroundProperly();
                 copCarBlock1.SirenActive = true;
@@ -849,13 +871,14 @@ namespace NooseMod_LCPDFR.Callouts
             if (lastPlayedMission == finalMission)
             {
                 this.PlaySound(true);
+                Log.Debug("DispatchTeam: Sound played", this);
             }
 
             Functions.AddTextToTextwall(string.Format(Functions.GetStringFromLanguageFile("CALLOUT_NOOSEMOD_PLAYER_IN_POS"), Functions.GetAreaStringFromPosition(this.spawnPosition)), LPlayer.LocalPlayer.Name);
 
             // When arrived in time, dispatch NOOSE Squad in with additional police force
             // Breach in when in position
-            nooseVeh2 = new LVehicle(World.GetPositionAround(this.spawnPosition, 3 ^ 5), "NSTOCKADE");
+            nooseVeh2 = new LVehicle(World.GetPositionAround(this.spawnPosition, 3 ^ 5), Common.GetRandomCollectionValue<string>(nooseVehicleModels));
             LPed nooseDisp1 = nooseVeh2.CreatePedOnSeat(VehicleSeat.Driver, SWATTrooper, RelationshipGroup.Cop);
             LPed nooseDisp2 = nooseVeh2.CreatePedOnSeat(VehicleSeat.AnyPassengerSeat, SWATTrooper, RelationshipGroup.Cop);
             LPed nooseDisp3 = nooseVeh2.CreatePedOnSeat(VehicleSeat.AnyPassengerSeat, SWATTrooper, RelationshipGroup.Cop);
@@ -864,6 +887,12 @@ namespace NooseMod_LCPDFR.Callouts
             SquadTroops = new LPed[4] { nooseDisp1, nooseDisp2, nooseDisp3, nooseDisp4 };
             for (int i = 0; i <= SquadTroops.Length; i++)
             {
+                SquadTroops[i].ChangeRelationship(RelationshipGroup.Cop, Relationship.Companion);
+                SquadTroops[i].ChangeRelationship(RelationshipGroup.Criminal, Relationship.Hate);
+                SquadTroops[i].ChangeRelationship(RelationshipGroup.Gang_Biker1, Relationship.Hate);
+                SquadTroops[i].ChangeRelationship(RelationshipGroup.Gang_Biker2, Relationship.Hate);
+                SquadTroops[i].ChangeRelationship(RelationshipGroup.Civillian_Male, Relationship.Like);
+                SquadTroops[i].ChangeRelationship(RelationshipGroup.Civillian_Female, Relationship.Like);
                 SquadTroops[i].Weapons.RemoveAll();
                 SquadTroops[i].Weapons.FromType(Weapon.Melee_Knife);
                 SquadTroops[i].Weapons.FromType(Weapon.Handgun_Glock).Ammo = 5 ^ 5;
@@ -910,7 +939,7 @@ namespace NooseMod_LCPDFR.Callouts
                     squad[i].LeaveVehicle();
                 }
             }
-            mission = MissionState.DuringMission;
+            mission = MissionState.Initialize;
             base.State = mission;
         }
 
@@ -934,6 +963,11 @@ namespace NooseMod_LCPDFR.Callouts
             }
             //CALLOUT_NOOSEMOD_FIGHT_SUSPECTS
             Functions.PrintText(Functions.GetStringFromLanguageFile("CALLOUT_NOOSEMOD_FIGHT_SUSPECTS"), 25000);
+            Log.Debug("InitiateShootout: Initialized", this);
+
+            // Prevent looping
+            mission = MissionState.DuringMission;
+            base.State = mission;
         }
 
         /// <summary>
@@ -1003,6 +1037,8 @@ namespace NooseMod_LCPDFR.Callouts
                 }
                 //else { isRemainingTerroristsFled = false; }
             }
+            Log.Debug("CombatOrders_RemainingTerrorists: Terrorists fled the scene", this);
+
             return isRemainingTerroristsFled;
         }
 
@@ -1074,6 +1110,8 @@ namespace NooseMod_LCPDFR.Callouts
                     }
                 }
             }
+
+            Log.Debug("Casualties: Officers: " + officers_killed + ", Squad member: " + squad_killed + ", Hostages: " + deadHostages.Count, this);
         }
 
         /// <summary>
@@ -1106,7 +1144,9 @@ namespace NooseMod_LCPDFR.Callouts
         public override void Process()
         {
             base.Process();
+
             // Count on how many terrors left to be finished
+            //if (base.State.Equals(MissionState.DuringMission))
             do
             {
                 // Should between 1 and 3 because Intro only include 4 terrorists and 3 hostages
@@ -1140,6 +1180,8 @@ namespace NooseMod_LCPDFR.Callouts
                 // Save the progress
                 SaveGame();
 
+                Log.Debug("Process: Commands properly assigned", this);
+
                 // End everything
                 PlaySound(false);
                 PlayFinishedMissionSound();
@@ -1153,6 +1195,7 @@ namespace NooseMod_LCPDFR.Callouts
                 // If situation permits
                 PlaySound(false);
                 PlayFinishedMissionSound();
+                Log.Debug("Process: a pursuit is still running, destroying...", this);
                 this.SetCalloutFinished(true, false, true);
                 this.End();
             }
@@ -1185,6 +1228,7 @@ namespace NooseMod_LCPDFR.Callouts
 
             // Clear list
             deadSuspects.Clear(); deadHostages.Clear(); hostages.Clear(); arrestedSuspects.Clear(); missionPeds.Clear(); squad.Clear(); PoliceOfficers.Clear();
+            Log.Debug("List Cleared!",this);
 
             // Reset enum
             mission = MissionState.OnDuty;
@@ -1192,6 +1236,7 @@ namespace NooseMod_LCPDFR.Callouts
             // End pursuit if still running
             if (this.pursuit != null)
             {
+                Log.Debug("End: a pursuit is still running, destroying...", this);
                 Functions.ForceEndPursuit(this.pursuit);
             }
         }
@@ -1208,6 +1253,15 @@ namespace NooseMod_LCPDFR.Callouts
             // Free ped
             Functions.RemoveFromDeletionList(ped, this);
             Functions.SetPedIsOwnedByScript(ped, this, false);
+        }
+
+        /// <summary>
+        /// Gets a string representation of this event. Call Base to get the string.
+        /// </summary>
+        /// <returns>A string that represents current object</returns>
+        public override string ToString()
+        {
+            return base.ToString();
         }
 	}
 }

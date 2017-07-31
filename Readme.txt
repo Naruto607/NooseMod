@@ -172,7 +172,7 @@ You need to grab the necessities like NooseMod.ini, NooseMod folder, and many th
 
 Installation:
 ====
-1.	Put NooseMod_LCPDFR.dll, NooseMod_LCPDFR.dll.config, NooseMod.ini and NooseMod folder into «yourgamedir»\LCPDFR\plugins directory.
+1.	Put NooseMod.net.dll, NooseMod.net.dll.config, NooseMod.ini and NooseMod folder into «yourgamedir»\LCPDFR\plugins directory.
 2.	Put Audio folder to «yourgamedir»\LCPDFR directory.
 3.	Put NAudio.dll to «yourgamedir» directory. If you have it from other mods (like JulioNIB's), disregard.
 4.	Edit NooseMod.ini to your preferences.
@@ -202,6 +202,7 @@ Every mission will have a time limit until a hostage has been executed. Time you
 
 
 If you are selecting the model other than SWAT/NOOSE (M_Y_COP or standard policeman for example), the special callout "Terrorist Pursuit" will be assigned.
+No stats will be recorded if you are playing with model other than SWAT/NOOSE, but you still be able to gain salary like the SWATs do (not just issuing parking ticket or issuing citation to people).
 
 
 Issues:
@@ -212,7 +213,7 @@ It is possible to pass this mission in EFLC, but you have to do workarounds. Don
 
 License:
 ====
-This script mod follows the compliance of Naruto 607's Game Modding License and GNU General Public License.
+This script mod follows the compliance of Naruto 607's Game Modding License and GNU Lesser General Public License (see GPL.txt and LGPL.txt).
 Feel free to redistribute.
 
 You are also free to modify or enhance this source code or the compiled library and release it as long as my name mentioned clearly in the Readme and the license must not be modified or tampered with.

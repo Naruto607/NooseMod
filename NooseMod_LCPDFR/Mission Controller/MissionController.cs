@@ -156,6 +156,9 @@ namespace NooseMod_LCPDFR.Mission_Controller
                 StreamReader streamReader = new StreamReader("LCPDFR\\Plugins\\NooseMod\\save.txt");
                 this.lastPlayedMission = Int16.Parse(streamReader.ReadLine());
                 streamReader.Close();
+
+                // Debug message (testing only)
+                Log.Debug("Game has been loaded with return value " + this.lastPlayedMission, this);
             }
             catch (Exception ex) { Log.Error("Unable to read or write save.txt: " + ex.Message, this); }
         }
@@ -169,7 +172,9 @@ namespace NooseMod_LCPDFR.Mission_Controller
             // Though I personally hate it, there is no other way except accessing the LCPDFR Config File
             // through the SHDN as LCPDFR itself do not have a function to determine whether Hardcore Mode is active.
             bool Mode = SettingsFile.Open("LCPDFR\\LCPDFR.ini").GetValueBool("Enabled", "Hardcore", false);
-            //Log.Debug(string.Format(Functions.GetStringFromLanguageFile("LCPDMAIN_HARDMODE"), Mode), this);
+
+            // Debug message (testing only)
+            Log.Debug(string.Format(Functions.GetStringFromLanguageFile("LCPDMAIN_HARDMODE"), Mode), this);
             return Mode;
         }
 
@@ -179,17 +184,36 @@ namespace NooseMod_LCPDFR.Mission_Controller
         /// <returns>Model name of a criminal</returns>
         public string LoadRandomRegisteredPeds()
         {
-            string ModelNames = SettingsFile.Open("LCPDFR\\Plugins\\NooseMod.ini").GetValueString("CriminalModel", "WorldSettings", "M_M_GUNNUT_01");
-            string[] ModelName = ModelNames.Split(new char[]
+            string[] ModelName = SettingsFile.Open("LCPDFR\\Plugins\\NooseMod.ini").
+                GetValueString("CriminalModel", "WorldSettings", "M_M_GUNNUT_01").
+                Split(new char[]
 			{
 				';'
 			});
-            int randNum = 0;
-            if (ModelName.Length != 0)
+            int lastPointer = ModelName.Length;
+            foreach (string text in ModelName)
             {
-                randNum = Common.GetRandomValue(0, ModelName.Length);
+                if (text == null)
+                {
+                    Log.Warning("LoadRandomRegisteredPeds: Invalid entry", this);
+                }
             }
-            else { randNum = 0; };
+            int randNum = 0;
+
+            // Check if the length of the text is not null
+            // When null, load on the pointer that is not null
+                if (ModelName.Length != 0 && ModelName[lastPointer] != null)
+                {
+                    randNum = Common.GetRandomValue(0, ModelName.Length);
+                }
+                else if (ModelName.Length != 0 && ModelName[lastPointer] == null)
+                {
+                    int randNumPointer = ModelName.Length;
+                    randNumPointer--;
+                    randNum = Common.GetRandomValue(0, randNumPointer);
+                }
+                else { randNum = 0; }
+
             return ModelName[randNum];
         }
 
@@ -206,8 +230,9 @@ namespace NooseMod_LCPDFR.Mission_Controller
                     "M_Y_GANGELS_02", "M_Y_GANGELS_03", "M_Y_GANGELS_04", "M_Y_GANGELS_05", "M_Y_GANGELS_06" };
             }
             else { bikerModels_AOD = new string[] { "M_M_GBIK_LO_03", "M_Y_GBIK02_LO_02", "M_Y_GBIK_HI_01", "M_Y_GBIK_HI_02" }; }
-            int randNum = Common.GetRandomValue(0, bikerModels_AOD.Length);
-            return bikerModels_AOD[randNum];
+            //int randNum = Common.GetRandomValue(0, bikerModels_AOD.Length);
+            //return bikerModels_AOD[randNum];
+            return Common.GetRandomCollectionValue<string>(bikerModels_AOD);
         }
 
         /// <summary>
@@ -225,8 +250,18 @@ namespace NooseMod_LCPDFR.Mission_Controller
                     "LOSTBUDDY_11", "LOSTBUDDY_12", "LOSTBUDDY_13" };
             }
             else { bikerModels_TLMC = new string[] { "M_Y_GBIK_LO_01", "M_Y_GBIK_LO_02" }; }
-            int randNum = Common.GetRandomValue(0, bikerModels_TLMC.Length);
-            return bikerModels_TLMC[randNum];
+            //int randNum = Common.GetRandomValue(0, bikerModels_TLMC.Length);
+            //return bikerModels_TLMC[randNum];
+            return Common.GetRandomCollectionValue<string>(bikerModels_TLMC);
+        }
+
+        /// <summary>
+        /// Gets a string representation of this event.
+        /// </summary>
+        /// <returns>A string that represents current object</returns>
+        public override string ToString()
+        {
+            return base.ToString();
         }
     }
 }

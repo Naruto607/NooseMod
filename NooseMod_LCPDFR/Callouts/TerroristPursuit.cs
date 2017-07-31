@@ -171,16 +171,6 @@
                             // Add to deletion list and to pursuit
                             Functions.AddToScriptDeletionList(this.terrorists[i], this);
                             Functions.AddPedToPursuit(this.pursuit, this.terrorists[i]);
-
-                            // Parity check, just to show how to normally use this API. No need if you just created the ped,
-                            // since no other script could own it already
-                            /*if (!Functions.DoesPedHaveAnOwner(this.terrorists[i]))
-                            {
-                                // Bind ped to script so it can't be used by other scripts, such as random scenarios
-                                // Because we now own this script, we also have to define behavior what we want to do when another script
-                                // takes over control, e.g. when being arrested. That's why we implement PedLeftScript below
-                                Functions.SetPedIsOwnedByScript(this.terrorists[i], this, true);
-                            }*/
                         }
                     }
 
@@ -215,7 +205,7 @@
                     Functions.SetPursuitIsActiveForPlayer(this.pursuit, true);
 
                     // Show message to the player
-                    Functions.PrintText(Functions.GetStringFromLanguageFile("CALLOUT_terroristY_CATCH_UP"), 25000);
+                    Functions.PrintText(Functions.GetStringFromLanguageFile("CALLOUT_ROBBERY_CATCH_UP"), 25000);
                 }
             }
             catch (Exception ex) { Log.Error("Cannot create Pursuit instance: " + ex.Message, this); pursuitReady = false; }
@@ -228,30 +218,6 @@
         public override void Process()
         {
             base.Process();
-
-            /*// Print text message when all suspect have been arrested
-            int arrestCount = this.terrorists.Count(terrorist => terrorist.Exists() && terrorist.HasBeenArrested);
-            int killCount = this.terrorists.Count(terrorist => terrorist.Exists() && terrorist.IsDead);
-            if (arrestCount == this.terrorists.Length)
-            {
-                cashForArrestedTerrors = cashForArrestedTerrors * this.terrorists.Length;
-                Functions.PrintText("Excellent work! All terrorists have been arrested. " +
-                    "You have gained $" + cashForArrestedTerrors.ToString() + " for your service.", 5000);
-                LPlayer.LocalPlayer.Money += cashForArrestedTerrors;
-                this.SetCalloutFinished(true, true, false);
-                this.End();
-            }
-
-            // End this script is pursuit is no longer running, e.g. because all suspects are dead
-            if (!Functions.IsPursuitStillRunning(this.pursuit))
-            {
-                cashForKilledTerrors = cashForKilledTerrors * killCount;
-                Functions.PrintText("Excellent work! You aided NOOSE in eliminating fleeing terrorists. " +
-                    "You have gained $" + cashForKilledTerrors.ToString() + " for your service.", 5000);
-                LPlayer.LocalPlayer.Money += cashForKilledTerrors;
-                SetCalloutFinished(true, true, false);
-                this.End();
-            }*/
 
             int arrestCount = this.terrorists.Count(terrorist => terrorist.Exists() && terrorist.HasBeenArrested);
             int killCount = this.terrorists.Count(terrorist => terrorist.Exists() && terrorist.IsDead);

@@ -23,15 +23,12 @@ namespace NooseMod_LCPDFR.Mission_Controller
         /// </summary>
         WaitForTeamInsertion,
         /// <summary>
+        /// Initialize: Register Pursuit
+        /// </summary>
+        Initialize,
+        /// <summary>
         /// During Mission: Shootout between NOOSE and terrorists
         /// </summary>
 		DuringMission
-        /*
-        /// <summary>
-        /// Engage Remaining Fleeing Terrorists: extra feature to allow remaining terrorists to flee the crime scene
-        /// when condition permits
-        /// </summary>
-        EngageRemainingFleeingTerrors
-         */
 	}
 }

@@ -52,7 +52,7 @@ namespace NooseMod_LCPDFR
         /// <summary>
         /// Current Game Episode where the LCPDFR is running from
         /// </summary>
-        private GameEpisode currentGameEpPlatform;
+        private GameEpisode currentGameEpPlatform = Game.CurrentEpisode;
 
         /// <summary>
         /// An LCPDFR Player
@@ -129,12 +129,14 @@ namespace NooseMod_LCPDFR
                 Functions.RegisterCallout(typeof(NooseMod)); // TODO: expand to 8 missions
                 stats.OverallStats.AddOverallStatsRow(0, 0, 0, 0, 0, 0); // Build new Stats row
                 loginNumbers = stats.OverallStats.Rows.Count; // Record how many rows made
+                Log.Debug("NooseMod callout initialized", this);
             }
             else if (onDuty && lcpdfrPlayer.Skin.Model != new Model("M_Y_SWAT") || lcpdfrPlayer.Skin.Model != new Model("M_Y_NHELIPILOT"))
             {
                 // Otherwise register TerroristPursuit callout
                 //Game.DisplayText("You need to play as a NOOSE/SWAT member to start NooseMod plugin.");
                 Functions.RegisterCallout(typeof(TerroristPursuit));
+                Log.Debug("Played as a model other than SWAT, Terrorist Pursuit callout initialized", this);
             }
             // World Event is not yet complete - DO NOT REMOVE COMMENT
             //Functions.AddWorldEvent(typeof(ProvostPatrol), "Provost Patrol");
@@ -187,22 +189,40 @@ namespace NooseMod_LCPDFR
         [ConsoleCommand("ShowNooseModStats", false)]
         private void ShowNooseModStats(ParameterCollection parameterCollection)
         {
-            int tempVar1 = stats.OverallStats.FindBySession(loginNumbers).Suspects_Killed,
-                tempVar2 = stats.OverallStats.FindBySession(loginNumbers).Suspects_Arrested,
-                tempVar3 = stats.OverallStats.FindBySession(loginNumbers).Hostages_Killed,
-                tempVar4 = stats.OverallStats.FindBySession(loginNumbers).Hostages_Rescued,
-                tempVar5 = stats.OverallStats.FindBySession(loginNumbers).Officer_Casualties,
-                tempVar6 = stats.OverallStats.FindBySession(loginNumbers).Squad_Casualties;
+            if (stats.OverallStats.Rows.Count != 0)
+            {
+                try
+                {
+                    int tempVar1 = stats.OverallStats.FindBySession(loginNumbers).Suspects_Killed,
+                        tempVar2 = stats.OverallStats.FindBySession(loginNumbers).Suspects_Arrested,
+                        tempVar3 = stats.OverallStats.FindBySession(loginNumbers).Hostages_Killed,
+                        tempVar4 = stats.OverallStats.FindBySession(loginNumbers).Hostages_Rescued,
+                        tempVar5 = stats.OverallStats.FindBySession(loginNumbers).Officer_Casualties,
+                        tempVar6 = stats.OverallStats.FindBySession(loginNumbers).Squad_Casualties;
 
-            Game.Console.Print("NooseMod Statistics");
-            Game.Console.Print("---");
-            Game.Console.Print("Your login session: "+loginNumbers);
-            Game.Console.Print("Total Suspects killed: "+tempVar1);
-            Game.Console.Print("Total Suspects arrested: "+tempVar2);
-            Game.Console.Print("Total Hostages killed: " + tempVar3);
-            Game.Console.Print("Total Hostages rescued: " + tempVar4);
-            Game.Console.Print("Total Officers killed in mission: " + tempVar5);
-            Game.Console.Print("Total Squad casualties: " + tempVar6);
+                    // Print the statistics to console
+                    Game.Console.Print("NooseMod Statistics");
+                    Game.Console.Print("---");
+                    Game.Console.Print("Your login session: " + loginNumbers);
+                    Game.Console.Print("Total Suspects killed: " + tempVar1);
+                    Game.Console.Print("Total Suspects arrested: " + tempVar2);
+                    Game.Console.Print("Total Hostages killed: " + tempVar3);
+                    Game.Console.Print("Total Hostages rescued: " + tempVar4);
+                    Game.Console.Print("Total Officers killed in mission: " + tempVar5);
+                    Game.Console.Print("Total Squad casualties: " + tempVar6);
+                }
+                catch (Exception ex) { Game.Console.Print("NooseMod Statistics: Error loading stats: " + ex.Message); }
+            }
+            else { Game.Console.Print("NooseMod Statistics: no session is loaded"); }
+        }
+
+        /// <summary>
+        /// Gets a string representation of this event. Call Base to get the string.
+        /// </summary>
+        /// <returns>A string that represents current object</returns>
+        public override string ToString()
+        {
+            return base.ToString();
         }
 
         #region LCPDFR External Procedures
@@ -311,12 +331,12 @@ namespace NooseMod_LCPDFR
                         case "Rifle_M4": PrimaryWeapon1 = Weapon.Rifle_M4; break;
                         case "TBOGT_AdvancedMG": if (currentGameEpPlatform == GameEpisode.TBOGT)
                             {
-                                PrimaryWeapon1 = Weapon.TBOGT_AdvancedMG;
+                                PrimaryWeapon1 = Weapon.TBOGT_AdvancedMG; // M249
                             }
                             else { PrimaryWeapon1 = Weapon.Rifle_M4; } break;
                         case "TBOGT_AdvancedSniper": if (currentGameEpPlatform == GameEpisode.TBOGT)
                             {
-                                PrimaryWeapon1 = Weapon.TBOGT_AdvancedSniper;
+                                PrimaryWeapon1 = Weapon.TBOGT_AdvancedSniper; // DSR-1
                             }
                             else { PrimaryWeapon1 = Weapon.SniperRifle_M40A1; } break;
                         case "SMG_MP5": PrimaryWeapon1 = Weapon.SMG_MP5; break;
@@ -325,17 +345,17 @@ namespace NooseMod_LCPDFR
                         case "Heavy_RocketLauncher": PrimaryWeapon1 = Weapon.Heavy_RocketLauncher; break;
                         case "TLAD_GrenadeLauncher": if (currentGameEpPlatform == GameEpisode.TLAD)
                             {
-                                PrimaryWeapon1 = Weapon.TLAD_GrenadeLauncher;
+                                PrimaryWeapon1 = Weapon.TLAD_GrenadeLauncher; // HK69A1 40mm
                             }
                             else { PrimaryWeapon1 = Weapon.None; } break;
                         case "TBOGT_GrenadeLauncher": if (currentGameEpPlatform == GameEpisode.TBOGT)
                             {
-                                PrimaryWeapon1 = Weapon.TBOGT_GrenadeLauncher;
+                                PrimaryWeapon1 = Weapon.TBOGT_GrenadeLauncher; // HK69A1 40mm
                             }
                             else { PrimaryWeapon1 = Weapon.None; } break;
                         case "TBOGT_AssaultSMG": if (currentGameEpPlatform == GameEpisode.TBOGT)
                             {
-                                PrimaryWeapon1 = Weapon.TBOGT_AssaultSMG;
+                                PrimaryWeapon1 = Weapon.TBOGT_AssaultSMG; // P90
                             }
                             else { PrimaryWeapon1 = Weapon.SMG_MP5; } break;
                     }
@@ -346,22 +366,22 @@ namespace NooseMod_LCPDFR
                         case "Shotgun_Basic": PrimaryWeapon2 = Weapon.Shotgun_Basic; break;
                         case "TBOGT_ExplosiveShotgun": if (currentGameEpPlatform == GameEpisode.TBOGT)
                             {
-                                PrimaryWeapon2 = Weapon.TBOGT_ExplosiveShotgun;
+                                PrimaryWeapon2 = Weapon.TBOGT_ExplosiveShotgun; // AA-12 12ga Frag-12
                             }
                             else { PrimaryWeapon2 = Weapon.Shotgun_Baretta; } break;
                         case "TBOGT_NormalShotgun": if (currentGameEpPlatform == GameEpisode.TBOGT)
                             {
-                                PrimaryWeapon2 = Weapon.TBOGT_NormalShotgun;
+                                PrimaryWeapon2 = Weapon.TBOGT_NormalShotgun; // AA-12 Shotgun
                             }
                             else { PrimaryWeapon2 = Weapon.Shotgun_Baretta; } break;
                         case "TLAD_AssaultShotgun": if (currentGameEpPlatform == GameEpisode.TLAD)
                             {
-                                PrimaryWeapon2 = Weapon.TLAD_AssaultShotgun;
+                                PrimaryWeapon2 = Weapon.TLAD_AssaultShotgun; // Striker
                             }
                             else { PrimaryWeapon2 = Weapon.Shotgun_Baretta; } break;
                         case "TLAD_SawedOffShotgun": if (currentGameEpPlatform == GameEpisode.TLAD)
                             {
-                                PrimaryWeapon2 = Weapon.TLAD_SawedOffShotgun;
+                                PrimaryWeapon2 = Weapon.TLAD_SawedOffShotgun; // Lupara?
                             }
                             else { PrimaryWeapon2 = Weapon.Shotgun_Basic; } break;
                     }
@@ -379,12 +399,12 @@ namespace NooseMod_LCPDFR
                             case "Handgun_DesertEagle": PrefixPistol = Weapon.Handgun_DesertEagle; break;
                             case "TLAD_Automatic9mm": if (currentGameEpPlatform == GameEpisode.TLAD)
                                 {
-                                    PrefixPistol = Weapon.TLAD_Automatic9mm;
+                                    PrefixPistol = Weapon.TLAD_Automatic9mm; // CZ75-Auto
                                 }
                                 else { PrefixPistol = Weapon.Handgun_Glock; } break;
                             case "TBOGT_Pistol44": if (currentGameEpPlatform == GameEpisode.TBOGT)
                                 {
-                                    PrefixPistol = Weapon.TBOGT_Pistol44;
+                                    PrefixPistol = Weapon.TBOGT_Pistol44; // SA Auto .44
                                 }
                                 else { PrefixPistol = Weapon.Handgun_DesertEagle; } break;
                         }
@@ -405,6 +425,7 @@ namespace NooseMod_LCPDFR
                     {
                         lcpdfrPlayer.Ped.Weapons.AnyHandgun.Ammo += PistolAmmo;
                     }
+
                     // Free Grenades! (Molotovs or other throwables are replaced)
                     lcpdfrPlayer.Ped.Weapons.FromType(Weapon.Thrown_Grenade).Ammo += 3;
                 }
@@ -453,7 +474,7 @@ namespace NooseMod_LCPDFR
             // If player is near a terminal, show message
             //Blip resetZone = Blip.AddBlip(PartnerRoom);
             GTA.Timer time = new GTA.Timer();
-            int timeToResetAgain = 9999;
+            int timeToResetAgain = 3000;
 
             if (lcpdfrPlayer.IsInPoliceDepartment && lcpdfrPlayer.IsOnDuty && lcpdfrPlayer.Ped.Position.DistanceTo(PartnerRoom) < 1f)
             {

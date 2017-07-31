@@ -16,14 +16,15 @@
 
 //    Greetings to Sam @ LCPDFR.com for this wonderful API feature.
 
+using GTA;
+using LCPD_First_Response.Engine;
+using LCPD_First_Response.Engine.Scripting.Entities;
+using LCPD_First_Response.LCPDFR.API;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using LCPD_First_Response.Engine;
-using LCPD_First_Response.LCPDFR.API;
-using GTA;
 
 // This script is currently incomplete and still contains errors. Many things are not yet implemented due to the quick learning.
 // If you instate this in Functions.AddWorldEvent(typeof(ProvostPatrol), "Provost Patrol"); (removing commentary there in Main.cs), it may result in plugin error in game with LCPDFR running.
@@ -39,6 +40,12 @@ namespace NooseMod_LCPDFR.World_Events
         /// NOOSE members that will be created
         /// </summary>
         private LPed[] SWATMembers;
+
+        // Using CModelInfo - look for model name and its hash here: https://www.gtamodding.com/wiki/List_of_models_hashes
+        /// <summary>
+        /// Model Information of NOOSE/SWAT trooper using LCPDFR basis
+        /// </summary>
+        private CModel SWATTrooper = new CModel(new CModelInfo("M_Y_SWAT", 3290204350, EModelFlags.IsNoose));
 
         /// <summary>
         /// The vehicle
@@ -67,34 +74,32 @@ namespace NooseMod_LCPDFR.World_Events
         public override void Initialize()
         {
             base.Initialize();
-            // TODO: Create a NOOSE vehicle with 4 NOOSE guys inside
-            SWATMembers = new LPed[] {
-                new LPed(lcpdfrPlayer.Ped.GetOffsetPosition(new Vector3(0,0,0)),"M_Y_SWAT"),
-                new LPed(lcpdfrPlayer.Ped.GetOffsetPosition(new Vector3(3.0f,3.0f,0)),"M_Y_SWAT"),
-                new LPed(lcpdfrPlayer.Ped.GetOffsetPosition(new Vector3(3.0f,6.0f,0)),"M_Y_SWAT"),
-                new LPed(lcpdfrPlayer.Ped.GetOffsetPosition(new Vector3(6.0f,3.0f,0)),"M_Y_SWAT"),
-            };
-            NooseVeh = new LVehicle(lcpdfrPlayer.Ped.GetOffsetPosition(new Vector3(50.0f, 50.0f, 0)), "noose");
+
+            NooseVeh = new LVehicle(lcpdfrPlayer.Ped.GetOffsetPosition(new Vector3(90.0f, 90.0f, 0)), "NOOSE");
             NooseVeh.PlaceOnNextStreetProperly();
+            NooseVeh.Wash();
+            SWATMembers = new LPed[4] {
+                NooseVeh.CreatePedOnSeat(VehicleSeat.Driver,SWATTrooper, RelationshipGroup.Cop),
+                NooseVeh.CreatePedOnSeat(VehicleSeat.AnyPassengerSeat,SWATTrooper,RelationshipGroup.Cop),
+                NooseVeh.CreatePedOnSeat(VehicleSeat.AnyPassengerSeat,SWATTrooper,RelationshipGroup.Cop),
+                NooseVeh.CreatePedOnSeat(VehicleSeat.AnyPassengerSeat,SWATTrooper,RelationshipGroup.Cop)
+            };
             for (int i = 0; i <= SWATMembers.Length; i++)
             {
-                SWATMembers[i].RelationshipGroup = RelationshipGroup.Cop;
+                SWATMembers[i].ChangeRelationship(RelationshipGroup.Cop, Relationship.Respect);
+                SWATMembers[i].ChangeRelationship(RelationshipGroup.Criminal, Relationship.Dislike);
+                SWATMembers[i].ChangeRelationship(RelationshipGroup.Gang_Biker1, Relationship.Dislike);
+                SWATMembers[i].ChangeRelationship(RelationshipGroup.Gang_Biker2, Relationship.Dislike);
                 SWATMembers[i].Accuracy = Common.GetRandomValue(75, 99);
                 SWATMembers[i].Armor = 100;
                 SWATMembers[i].Weapons.RemoveAll();
+                SWATMembers[i].Weapons.FromType(Weapon.Melee_Knife);
                 SWATMembers[i].Weapons.FromType(Weapon.Handgun_DesertEagle).Ammo = 999;
                 SWATMembers[i].Weapons.FromType(Weapon.Shotgun_Baretta).Ammo = 999;
                 SWATMembers[i].Weapons.FromType(Weapon.Rifle_M4).Ammo = 999;
                 SWATMembers[i].Weapons.FromType(Weapon.Thrown_Grenade).Ammo = Common.GetRandomValue(1,3);
                 SWATMembers[i].Weapons.Select(Weapon.Rifle_M4);
                 Functions.SetPedIsOwnedByScript(SWATMembers[i], this, true);
-            }
-            // Assign the first in the array (val. 0) into a car as a driver
-            SWATMembers[0].WarpIntoVehicle(NooseVeh, VehicleSeat.Driver);
-            // Assign the rest
-            for (int i = 1; i <= SWATMembers.Length; i++)
-            {
-                SWATMembers[i].WarpIntoVehicle(NooseVeh, VehicleSeat.AnyPassengerSeat);
             }
             NooseVeh.DisablePullover = true;
             NooseVeh.AllowSirenWithoutDriver = true;
@@ -109,8 +114,11 @@ namespace NooseMod_LCPDFR.World_Events
             base.Process();
 
             // Grab current vehicle data from the first spawned NOOSE/SWAT member and assign it to cruise drive.
-            Vehicle currentVeh = SWATMembers[0].CurrentVehicle;
-            SWATMembers[0].Task.CruiseWithVehicle(currentVeh, 40.0f, true);
+            if (NooseVeh.Exists() && NooseVeh.IsDriveable && SWATMembers[0].IsInVehicle(NooseVeh))
+            {
+                Vehicle currentVeh = SWATMembers[0].CurrentVehicle;
+                SWATMembers[0].Task.CruiseWithVehicle(currentVeh, 40.0f, true);
+            }
         }
 
         /// <summary>
@@ -130,8 +138,13 @@ namespace NooseMod_LCPDFR.World_Events
         {
             base.End();
 
-            // TODO: Need to think about any possibilities here
+            foreach (LPed myped in SWATMembers)
+            {
+                myped.NoLongerNeeded();
+                myped.Delete();
+            }
             NooseVeh.NoLongerNeeded();
+            NooseVeh.Delete();
         }
 
         
@@ -148,7 +161,7 @@ namespace NooseMod_LCPDFR.World_Events
             {
                 if (ped == SWATMembers[i])
                 {
-                    this.SWATMembers[i].Task.ClearAll();
+                    SWATMembers[i].Task.ClearAll();
                     SWATMembers[i].NoLongerNeeded();
                 }
                 //NooseVeh.NoLongerNeeded();
@@ -168,14 +181,27 @@ namespace NooseMod_LCPDFR.World_Events
         {
             // TODO: These personnel should appear in Bohan, southern Algonquin, airport, and Alderney
             //throw new NotImplementedException();
+            bool AllSet = new bool();
+
             for (int i = 0; i <= possibleNooseLocations.Length; i++)
             {
                 if (lcpdfrPlayer.Ped.Position.DistanceTo(possibleNooseLocations[i]) < 300.0f)
                 {
-                    return position == possibleNooseLocations[i];
+                    AllSet = true;
                 }
-                else { return false; }
+                else { AllSet = false; }
             }
+
+            return AllSet;
+        }
+
+        /// <summary>
+        /// Gets a string representation of this event. Call Base to get the string.
+        /// </summary>
+        /// <returns>A string that represents current object</returns>
+        public override string ToString()
+        {
+            return base.ToString();
         }
     }
 }
