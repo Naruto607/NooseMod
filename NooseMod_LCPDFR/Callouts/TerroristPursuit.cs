@@ -1,4 +1,23 @@
-﻿namespace NooseMod_LCPDFR.Callouts
+﻿//    NooseMod LCPDFR Plugin with Database System
+//    Terrorist Pursuit Callout: called when the player is not a SWAT member
+//    Copyright (C) 2017 Naruto 607
+
+//    This program is free software: you can redistribute it and/or modify
+//    it under the terms of the GNU General Public License as published by
+//    the Free Software Foundation, either version 3 of the License, or
+//    (at your option) any later version.
+
+//    This program is distributed in the hope that it will be useful,
+//    but WITHOUT ANY WARRANTY; without even the implied warranty of
+//    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//    GNU General Public License for more details.
+
+//    You should have received a copy of the GNU General Public License
+//    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+//    Greetings to Sam @ LCPDFR.com for this wonderful API feature.
+
+namespace NooseMod_LCPDFR.Callouts
 {
     #region Uses
     using GTA;
@@ -6,6 +25,7 @@
     using LCPD_First_Response.Engine.Scripting.Entities;
     using LCPD_First_Response.LCPDFR.API;
     using LCPD_First_Response.LCPDFR.Callouts;
+    using NooseMod_LCPDFR.Properties;
     using System;
     using System.Linq;
     #endregion
@@ -15,7 +35,8 @@
     /// NOOSE may require your assistance when one or two terrorists break from the crime scene.
     /// Beware, they can't take kindly to law enforcers, so a little chance is that they will be packed with a rocket launcher.
     /// </summary>
-    [CalloutInfo("Pursuit", ECalloutProbability.VeryLow)]
+    //[CalloutInfo("Pursuit", ECalloutProbability.VeryLow)]
+    [CalloutInfo("TerroristPursuit", ECalloutProbability.VeryLow)]
     internal class TerroristPursuit : Callout
     {
         /// <summary>
@@ -24,15 +45,12 @@
         //private string[] criminalModels = { "M_Y_THIEF", "M_Y_THIEF", "M_Y_GRUS_LO_01", "M_Y_GRU2_LO_01", "M_Y_GMAF_LO_01", "M_Y_GMAF_HI_01", "M_Y_GTRI_LO_01", "M_Y_GTRI_LO_02", "M_Y_GALB_LO_01", "M_Y_GALB_LO_02" };
         private string[] criminalModels = SettingsFile.Open("LCPDFR\\Plugins\\NooseMod.ini").
             GetValueString("CriminalModel", "WorldSettings", "M_M_GUNNUT_01").
-            Split(new char[]
-			{
-				';'
-			});
+            Split(new char[] { ';' });
 
         /// <summary>
         /// Vehicle models that can be used.
         /// </summary>
-        private string[] vehicleModels = new string[] { "NSTOCKADE", "NOOSE", "POLICE", "POLICE2", "SPEEDO", "TAXI", "LANDSTALKER", "ORACLE", "TAXI2", "CAVALCADE", "AMBULANCE" };
+        private string[] vehicleModels = { "NSTOCKADE", "NOOSE", "POLICE", "POLICE2", "SPEEDO", "TAXI", "LANDSTALKER", "ORACLE", "TAXI2", "CAVALCADE", "AMBULANCE" };
 
         /// <summary>
         /// The pursuit.
@@ -88,8 +106,8 @@
             this.AddMinimumDistanceCheck(80f, this.spawnPosition);
 
             // Set up message
-            this.CalloutMessage = string.Format(Functions.GetStringFromLanguageFile("CALLOUT_NOOSEMOD_POLICE_BACKUP_REQUIRED"), Functions.GetAreaStringFromPosition(this.spawnPosition));
-            int rand = Common.GetRandomValue(0, 2);
+            this.CalloutMessage = string.Format(Functions.GetStringFromLanguageFile(Resources.CALLOUT_NOOSEMOD_POLICE_BACKUP_REQUIRED), Functions.GetAreaStringFromPosition(this.spawnPosition));
+            int rand = Common.GetRandomValue(0, 3);
             switch (rand)
             {
                 case 0:
@@ -126,7 +144,7 @@
                     Functions.AddToScriptDeletionList(this.vehicle, this);
                     this.vehicle.PlaceOnNextStreetProperly();
 
-                    int peds = Common.GetRandomValue(1, 3);
+                    int peds = Common.GetRandomValue(1, 4);
 
                     // Create suspects
                     this.terrorists = new LPed[peds];
@@ -182,14 +200,14 @@
                         copCar.PlaceOnNextStreetProperly();
 
                         // Using CModelInfo - look for model name and its hash here: https://www.gtamodding.com/wiki/List_of_models_hashes
-                        LPed NooseDriver = copCar.CreatePedOnSeat(VehicleSeat.Driver, new CModel(new CModelInfo("M_Y_SWAT", 3290204350, EModelFlags.IsNoose)), RelationshipGroup.Cop); // TODO: get the hash code for NOOSE model
-                        LPed NooseMember1 = copCar.CreatePedOnSeat(VehicleSeat.RightFront, new CModel(new CModelInfo("M_Y_SWAT", 3290204350, EModelFlags.IsNoose)), RelationshipGroup.Cop); // TODO: get the hash code for NOOSE model
-                        LPed NooseMember2 = copCar.CreatePedOnSeat(VehicleSeat.LeftRear, new CModel(new CModelInfo("M_Y_SWAT", 3290204350, EModelFlags.IsNoose)), RelationshipGroup.Cop); // TODO: get the hash code for NOOSE model
-                        LPed NooseMember3 = copCar.CreatePedOnSeat(VehicleSeat.RightRear, new CModel(new CModelInfo("M_Y_SWAT", 3290204350, EModelFlags.IsNoose)), RelationshipGroup.Cop); // TODO: get the hash code for NOOSE model
+                        LPed NooseDriver = copCar.CreatePedOnSeat(VehicleSeat.Driver, new CModel(new CModelInfo("M_Y_SWAT", 3290204350, EModelFlags.IsNoose)), RelationshipGroup.Cop);
+                        LPed NooseMember1 = copCar.CreatePedOnSeat(VehicleSeat.RightFront, new CModel(new CModelInfo("M_Y_SWAT", 3290204350, EModelFlags.IsNoose)), RelationshipGroup.Cop);
+                        LPed NooseMember2 = copCar.CreatePedOnSeat(VehicleSeat.LeftRear, new CModel(new CModelInfo("M_Y_SWAT", 3290204350, EModelFlags.IsNoose)), RelationshipGroup.Cop);
+                        LPed NooseMember3 = copCar.CreatePedOnSeat(VehicleSeat.RightRear, new CModel(new CModelInfo("M_Y_SWAT", 3290204350, EModelFlags.IsNoose)), RelationshipGroup.Cop);
 
                         LPed[] Nooses = { NooseDriver, NooseMember1, NooseMember2, NooseMember3 };
 
-                        for (int i = 0; i <= Nooses.Length; i++)
+                        for (int i = 0; i < Nooses.Length; i++)
                         {
                             if (Nooses[i] != null && Nooses[i].Exists())
                             {
@@ -208,7 +226,7 @@
                     Functions.PrintText(Functions.GetStringFromLanguageFile("CALLOUT_ROBBERY_CATCH_UP"), 25000);
                 }
             }
-            catch (Exception ex) { Log.Error("Cannot create Pursuit instance: " + ex.Message, this); pursuitReady = false; }
+            catch (Exception ex) { Log.Error("Cannot create Pursuit instance: " + ex, this); pursuitReady = false; }
             return pursuitReady;
         }
 

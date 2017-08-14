@@ -1,5 +1,6 @@
 using GTA;
 using LCPD_First_Response.Engine;
+using LCPD_First_Response.LCPDFR.API;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -44,7 +45,12 @@ namespace NooseMod_LCPDFR.Mission_Controller
 		private bool isMissionTimeSpecified;
 
         /// <summary>
-        /// Gets the name of a mission
+        /// Object that is sending (to prevent log details being null)
+        /// </summary>
+        private object missionObj = "NooseMod.Mission";
+
+        /// <summary>
+        /// Gets the name of a mission.
         /// </summary>
 		public string Name
 		{
@@ -55,7 +61,7 @@ namespace NooseMod_LCPDFR.Mission_Controller
 		}
 
         /// <summary>
-        /// Gets the coordinates of the mission location
+        /// Gets the coordinates of the mission location.
         /// </summary>
 		public Vector3 Location
 		{
@@ -66,7 +72,7 @@ namespace NooseMod_LCPDFR.Mission_Controller
 		}
 
         /// <summary>
-        /// Gets the location and number of hostages to be spawned
+        /// Gets the location and number of hostages to be spawned.
         /// </summary>
 		public List<Vector3> HostageLocations
 		{
@@ -77,7 +83,7 @@ namespace NooseMod_LCPDFR.Mission_Controller
 		}
 
         /// <summary>
-        /// Gets the location and number of suspects (terrorists) to be spawned
+        /// Gets the location and number of suspects (terrorists) to be spawned.
         /// </summary>
 		public List<Vector3> SuspectLocations
 		{
@@ -88,7 +94,7 @@ namespace NooseMod_LCPDFR.Mission_Controller
 		}
 
         /// <summary>
-        /// Gets whether the mission time is specified
+        /// Gets whether the mission time is specified.
         /// </summary>
 		public bool IsMissionTimeSpecified
 		{
@@ -99,7 +105,7 @@ namespace NooseMod_LCPDFR.Mission_Controller
 		}
 
         /// <summary>
-        /// Gets the mission time
+        /// Gets the mission time.
         /// </summary>
 		public TimeSpan MissionTime
 		{
@@ -110,7 +116,8 @@ namespace NooseMod_LCPDFR.Mission_Controller
 		}
 
         /// <summary>
-        /// Creates a new instance of <see cref="Mission"/> class
+        /// Creates a new instance of <see cref="Mission"/> class.
+        /// The new instance will read a mission text file and stores information of it.
         /// </summary>
         /// <param name="file">File name</param>
 		public Mission(string file)
@@ -148,9 +155,10 @@ namespace NooseMod_LCPDFR.Mission_Controller
 		}
 
         /// <summary>
-        /// Overrides <see cref="ToString"/> method into a readable text
+        /// Reads the current mission in play and returns an information of an object.
+        /// This includes: mission name, entry point + location name in GTA, number of suspects, and number of hostages.
         /// </summary>
-        /// <returns>A <see cref="string"/> representation of the object</returns>
+        /// <returns>A <see cref="string"/> representation of object</returns>
 		public override string ToString()
 		{
 			return string.Concat(new string[]
@@ -159,7 +167,7 @@ namespace NooseMod_LCPDFR.Mission_Controller
 				this.name,
 				" (Entry: ",
                 // Map coords and area name (LCPDFR feature)
-				this.location.ToString() + " [" + LCPD_First_Response.LCPDFR.API.Functions.GetAreaStringFromPosition(this.location) + "]",
+				this.location.ToString() + " [" + Functions.GetAreaStringFromPosition(this.location) + "]",
 				"): ",
                 // Number of terrorists/suspects
 				this.suspectLocations.Count.ToString(),
@@ -171,38 +179,45 @@ namespace NooseMod_LCPDFR.Mission_Controller
 		}
 
         /// <summary>
-        /// Parses the contained string into <see cref="GTA.Vector3"/> format
+        /// Parses the contained string (text) into <see cref="GTA.Vector3"/> format (coordinates in X, Y, and Z).
         /// </summary>
         /// <param name="str">The string of the contained text</param>
         /// <returns><see cref="GTA.Vector3"/> format</returns>
 		private Vector3 ParseVector3(string str)
 		{
-			string[] array = str.Split(new char[]
-			{
-				';'
-			});
-			if (array.Length != 3)
-			{
-				//throw new Exception("Invalid Vector3 format");
-                Log.Error("Invalid Vector3 format", this);
+			string[] array = str.Split(new char[] { ';' });
+
+            // Changed unequal to less than, should further-proof skipping through array more than 3
+            // Nice try, _hax!
+			if (array.Length < 3)
+            {
+                Log.Error("ParseVector3(string str): Invalid Vector3 format", missionObj);
+				throw new Exception("Invalid Vector3 format");
 			}
+
+                // Method will not stop parsing if detected more than 3 arrays (typo?).
+                // This is improved from the original NooseMod so that even though 4 "splits" defined per line,
+                //  method will only read the first three rather than skipping it (throwing Exception).
+                // 4 "splits" can be defined into Vector4 format, which the fourth "split" will be direction (heading).
+            else if (array.Length > 3)
+                Log.Warning("ParseVector3(string str): Detected more than 3 arrays in text - parsed only 3", missionObj);
 			return new Vector3(this.Str2Float(array[0]), this.Str2Float(array[1]), this.Str2Float(array[2]));
 		}
 
         /// <summary>
-        /// Converts Float number to a String
+        /// Converts <see cref="System.Single"/> value to a <see cref="System.String"/> format
         /// </summary>
-        /// <param name="f">The float number</param>
-        /// <returns>A <see cref="string"/> value</returns>
+        /// <param name="f"><see cref="System.Single"/> value</param>
+        /// <returns><see cref="System.String"/> value</returns>
 		private string Float2Str(float f)
 		{
 			return f.ToString(CultureInfo.GetCultureInfo("en-US"));
 		}
 
         /// <summary>
-        /// Converts String to a Float number
+        /// Converts <see cref="System.String"/> value to a <see cref="System.Single"/> format
         /// </summary>
-        /// <param name="str">The string (text)</param>
+        /// <param name="str"><see cref="System.String"/> (text)</param>
         /// <returns><see cref="System.Single"/> value</returns>
 		private float Str2Float(string str)
 		{

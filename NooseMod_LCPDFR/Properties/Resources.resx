@@ -136,7 +136,7 @@
     <value>Wait for the second team to arrive. Do not charge in to the target.</value>
   </data>
   <data name="CALLOUT_NOOSEMOD_TERRORIST_ACTIVITY" xml:space="preserve">
-    <value>Available units respond to the terrorist activity in {0}.</value>
+    <value>Available NOOSE units respond to the terrorist activity in {0}.</value>
   </data>
   <data name="CALLOUT_NOOSEMOD_TERRORIST_ACTIVITY_2" xml:space="preserve">
     <value>Officer is requesting NOOSE presence for a criminal in a gun spree in {0}.</value>
@@ -151,6 +151,6 @@
     <value>A Biker Gang has wrecked the peace in {0}, NOOSE presence is required.</value>
   </data>
   <data name="CALLOUT_NOOSEMOD_TERRORIST_ACTIVITY_6" xml:space="preserve">
-    <value>SOS Message received, relaying orders: Assault and Battery confirmed at {0}.</value>
+    <value>SOS Message received, relaying orders: Assault and Battery confirmed at {0}, available NOOSE units, please respond.</value>
   </data>
 </root>

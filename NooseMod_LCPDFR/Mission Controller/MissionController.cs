@@ -1,7 +1,22 @@
-﻿#region Uses
+﻿//    NooseMod LCPDFR Plugin with Database System - Controller Package
+//    Copyright (C) 2017 Naruto 607
+
+//    This program is free software: you can redistribute it and/or modify
+//    it under the terms of the GNU General Public License as published by
+//    the Free Software Foundation, either version 3 of the License, or
+//    (at your option) any later version.
+
+//    This program is distributed in the hope that it will be useful,
+//    but WITHOUT ANY WARRANTY; without even the implied warranty of
+//    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//    GNU General Public License for more details.
+
+//    You should have received a copy of the GNU General Public License
+//    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#region Uses
 using GTA;
 using LCPD_First_Response.Engine;
-using LCPD_First_Response.Engine.Scripting.Plugins;
 using LCPD_First_Response.LCPDFR.API;
 using System;
 using System.Collections.Generic;
@@ -13,7 +28,7 @@ namespace NooseMod_LCPDFR.Mission_Controller
     /// <summary>
     /// The controller to handle NooseMod missions, where it can load and save last game
     /// </summary>
-    public class MissionController
+    internal class MissionController
     {
         // Initialize
         #region Initialization
@@ -32,26 +47,18 @@ namespace NooseMod_LCPDFR.Mission_Controller
         /// Entry Point blip (will be used together with roadblock positioning)
         /// </summary>
         public Blip entryLoc;
-
-        /*
-        /// <summary>
-        /// The state of a mission
-        /// </summary>
-        private MissionState mission;
-         * */
         #endregion
 
         // Code
         /// <summary>
-        /// Constructs a new instance of <see cref="MissionController"/> class
+        /// Constructs a new instance of <see cref="MissionController"/> class.
+        /// No logic has been put, since this is used to control the main callout script.
         /// </summary>
-        public MissionController()
-        {
-
-        }
+        internal MissionController() { }
 
         /// <summary>
-        /// Assign a terrorist specified weapon (primary, secondary, and explosives are allowed)
+        /// Assign a terrorist specified weapon (primary, secondary, and explosives are allowed),
+        /// where this uses ALL weapons used in GTA.
         /// </summary>
         /// <param name="number">A number from the range of 1 to 9</param>
         /// <returns><see cref="GTA.Weapon"/></returns>
@@ -60,14 +67,22 @@ namespace NooseMod_LCPDFR.Mission_Controller
             Weapon selectedWeap = new Weapon();
             switch (number)
             {
+                    // Change your fav Terrorist weapons here.
+                    // 1 to 4 are GTA IV weapons
                 case 1: selectedWeap = Weapon.Rifle_AK47; break; // AK rifle (seen in CS:GO)
-                case 2: selectedWeap = Weapon.Shotgun_Basic; break; // Stub Shotgun (seen in CS:GO)
+                case 2: selectedWeap = Weapon.Shotgun_Basic; break; // Stub/Sawed-off Shotgun (seen in CS:GO)
                 case 3: selectedWeap = Weapon.Handgun_Glock; break; // Glock handgun (police issue)
                 case 4: selectedWeap = Weapon.SMG_Uzi; break; // Uzi SMG
+
+                    // 5 and 6 are TBoGT weapons (called when the Game Episode is TBoGT)
                 case 5: selectedWeap = Weapon.TBOGT_AdvancedMG; break; // MG, if running TBoGT
                 case 6: selectedWeap = Weapon.TBOGT_Pistol44; break; // .44A Handgun, if running TBoGT
+
+                    // 7 and 8 are TLAD weapons (called when the Game Episode is TLAD)
                 case 7: selectedWeap = Weapon.TLAD_Automatic9mm; break; // CZ75 (seen in CS:GO)
                 case 8: selectedWeap = Weapon.TLAD_AssaultShotgun; break; // Striker shotgun
+
+                    // 9 is throwable - you can change between Molotov and Grenade here
                 case 9: selectedWeap = Weapon.Thrown_Grenade; break; // Hand Grenades
                 default: throw new Exception("No weapons are assigned");
             }
@@ -75,7 +90,8 @@ namespace NooseMod_LCPDFR.Mission_Controller
         }
 
         /// <summary>
-        /// Assign a Counter-Terrorist (NOOSE Squad) specified weapon (primary, secondary, and explosives are allowed)
+        /// Assign a Counter-Terrorist (NOOSE Squad) specified weapon (primary, secondary, and explosives are allowed),
+        /// where this uses ALL weapons used in GTA.
         /// </summary>
         /// <param name="number">A number from the range of 1 to 9</param>
         /// <returns><see cref="GTA.Weapon"/></returns>
@@ -84,29 +100,33 @@ namespace NooseMod_LCPDFR.Mission_Controller
             Weapon selectedweap = new Weapon();
             switch (number)
             {
+                // Change your fav Counter-Terrorist weapons here.
+                // 1 to 5 are GTA IV weapons (also called when the Game Episode is TLAD,
+                    // because TLAD weapons are Terrorist-specific weapons)
                 case 1: selectedweap = Weapon.Handgun_Glock; break;
                 case 2: selectedweap = Weapon.Handgun_DesertEagle; break;
                 case 3: selectedweap = Weapon.Rifle_M4; break;
                 case 4: selectedweap = Weapon.SMG_MP5; break;
                 case 5: selectedweap = Weapon.SniperRifle_Basic; break;
+
+                // 6 to 9 are TBoGT weapons (called when the Game Episode is TBoGT)
                 case 6: selectedweap = Weapon.TBOGT_AdvancedMG; break;
                 case 7: selectedweap = Weapon.TBOGT_AssaultSMG; break;
                 case 8: selectedweap = Weapon.TBOGT_NormalShotgun; break;
                 case 9: selectedweap = Weapon.TBOGT_AdvancedSniper; break;
+                default: throw new Exception("No weapons are assigned");
             }
             return selectedweap;
         }
 
         /// <summary>
-        /// Runs the mission depending on the last saved game
+        /// Runs the mission depending on the last saved game.
         /// </summary>
         /// <param name="mission">The mission</param>
         /// <returns>Information on the mission it is played</returns>
         internal Mission PlayMission(int missionNumber)
         {
             Mission mission = loadedMissions[missionNumber];
-            //TimeSpan missionTime = mission.MissionTime;
-            //World.CurrentDayTime = mission.MissionTime;
             Blip spawnLocation = Blip.AddBlip(mission.Location);
             spawnLocation.Name = mission.Name;
             spawnLocation.RouteActive = true;
@@ -117,12 +137,14 @@ namespace NooseMod_LCPDFR.Mission_Controller
         }
 
         /// <summary>
-        /// Gather the mission data for use with the callout
+        /// Gather mission data for use with the callout and register it into the list.
         /// </summary>
         public void GetMissionData()
         {
             try
             {
+                // Read the text files
+                // Directory is relative to the game path where ScriptHookDotNet and LCPDFR are installed
                 string[] files = Directory.GetFiles("LCPDFR\\Plugins\\NooseMod\\Missions"); int numOfFiles = 0; // Careful, this may include the template file
                 do
                 {
@@ -130,14 +152,17 @@ namespace NooseMod_LCPDFR.Mission_Controller
                     loadedMissions.Add(new Mission(file));
                     numOfFiles++;
                 } while (numOfFiles < files.Length);
-                Log.Info("NooseMod successfully loaded " + this.loadedMissions.Count.ToString() + " missions into the list.", this);
+                Log.Info("NooseMod successfully loaded " + this.loadedMissions.Count.ToString() + " missions into the list.", this.ToString());
             }
+
             // When an exception occured, log the error message
-            catch (Exception ex) { Log.Error("Load failed: " + ex.Message, this); }
+            // Error may cause script to get ruined, because no missions are loaded
+            catch (Exception ex) { Log.Error("Load failed: " + ex, this.ToString()); }
         }
 
         /// <summary>
-        /// Used as a variable checkup, for example to acquire <see cref="Mission.missionTime"/> value
+        /// Used as a mission variable checkup.
+        /// This is used to satisfy the need of a callout or to check if the desired value condition is met.
         /// </summary>
         /// <param name="missionNumber">Mission Number</param>
         /// <returns>Information on the mission it is loaded</returns>
@@ -147,34 +172,34 @@ namespace NooseMod_LCPDFR.Mission_Controller
         }
 
         /// <summary>
-        /// Loads last saved game
+        /// Loads last saved game and stores it into <see cref="lastPlayedMission"/>.
+        /// It is used to retrieve information based on mission number, and stored progressively after successful attempt of missions.
         /// </summary>
         public void LoadGame()
         {
+            // Read the save path
+            // Directory is relative to the game path where ScriptHookDotNet and LCPDFR are installed
             try
             {
                 StreamReader streamReader = new StreamReader("LCPDFR\\Plugins\\NooseMod\\save.txt");
                 this.lastPlayedMission = Int16.Parse(streamReader.ReadLine());
                 streamReader.Close();
-
-                // Debug message (testing only)
-                Log.Debug("Game has been loaded with return value " + this.lastPlayedMission, this);
+                Log.Debug("Game has been loaded with return value " + this.lastPlayedMission, this.ToString());
             }
-            catch (Exception ex) { Log.Error("Unable to read or write save.txt: " + ex.Message, this); }
+            catch (Exception ex) { Log.Error("Unable to read or write save.txt: " + ex, this.ToString()); }
         }
 
         /// <summary>
-        /// Detects if the Hardcore Mode is active
+        /// Detects if the Hardcore Mode is active. LCPDFR uses Hardcore Mode that adds realism gameplay, and therefore
+        /// NooseMod will prove even more difficult when it's active.
         /// </summary>
         /// <returns>True if active, false if otherwise</returns>
         public bool HardcoreModeIsActive()
         {
             // Though I personally hate it, there is no other way except accessing the LCPDFR Config File
             // through the SHDN as LCPDFR itself do not have a function to determine whether Hardcore Mode is active.
+            // Directory is relative to the game path where ScriptHookDotNet and LCPDFR are installed
             bool Mode = SettingsFile.Open("LCPDFR\\LCPDFR.ini").GetValueBool("Enabled", "Hardcore", false);
-
-            // Debug message (testing only)
-            Log.Debug(string.Format(Functions.GetStringFromLanguageFile("LCPDMAIN_HARDMODE"), Mode), this);
             return Mode;
         }
 
@@ -186,16 +211,13 @@ namespace NooseMod_LCPDFR.Mission_Controller
         {
             string[] ModelName = SettingsFile.Open("LCPDFR\\Plugins\\NooseMod.ini").
                 GetValueString("CriminalModel", "WorldSettings", "M_M_GUNNUT_01").
-                Split(new char[]
-			{
-				';'
-			});
+                Split(new char[] { ';' });
             int lastPointer = ModelName.Length;
             foreach (string text in ModelName)
             {
                 if (text == null)
                 {
-                    Log.Warning("LoadRandomRegisteredPeds: Invalid entry", this);
+                    Log.Warning("LoadRandomRegisteredPeds: Invalid entry", this.ToString());
                 }
             }
             int randNum = 0;
@@ -204,13 +226,12 @@ namespace NooseMod_LCPDFR.Mission_Controller
             // When null, load on the pointer that is not null
                 if (ModelName.Length != 0 && ModelName[lastPointer] != null)
                 {
-                    randNum = Common.GetRandomValue(0, ModelName.Length);
+                    randNum = Common.GetRandomValue(0, ModelName.Length+1);
                 }
-                else if (ModelName.Length != 0 && ModelName[lastPointer] == null)
+                else if (ModelName.Length != 0 && ModelName[lastPointer] == null // null identifier
+                    || ModelName[lastPointer] == "") // if no text (empty spaces may return an error)
                 {
-                    int randNumPointer = ModelName.Length;
-                    randNumPointer--;
-                    randNum = Common.GetRandomValue(0, randNumPointer);
+                    randNum = Common.GetRandomValue(0, ModelName.Length);
                 }
                 else { randNum = 0; }
 
@@ -226,12 +247,13 @@ namespace NooseMod_LCPDFR.Mission_Controller
             string[] bikerModels_AOD;
             if (Game.CurrentEpisode == GameEpisode.TLAD)
             {
+                // When playing LCPDFR in TLAD platform, this will load standard and unique AOD Biker models.
+                // You can try adding the females here (if you think ladies can afford a gunfight), see TLAD peds.ide for model names.
                 bikerModels_AOD = new string[] { "M_M_GBIK_LO_03", "M_Y_GBIK02_LO_02", "M_Y_GBIK_HI_01", "M_Y_GBIK_HI_02", "M_Y_GANGELS_01",
                     "M_Y_GANGELS_02", "M_Y_GANGELS_03", "M_Y_GANGELS_04", "M_Y_GANGELS_05", "M_Y_GANGELS_06" };
             }
+                // Otherwise standard AOD Biker models will be used. TBoGT do not have unique biker model.
             else { bikerModels_AOD = new string[] { "M_M_GBIK_LO_03", "M_Y_GBIK02_LO_02", "M_Y_GBIK_HI_01", "M_Y_GBIK_HI_02" }; }
-            //int randNum = Common.GetRandomValue(0, bikerModels_AOD.Length);
-            //return bikerModels_AOD[randNum];
             return Common.GetRandomCollectionValue<string>(bikerModels_AOD);
         }
 
@@ -244,24 +266,26 @@ namespace NooseMod_LCPDFR.Mission_Controller
             string[] bikerModels_TLMC;
             if (Game.CurrentEpisode == GameEpisode.TLAD)
             {
+                // When playing LCPDFR in TLAD platform, this will load standard and unique TLMC models.
+                // This may include Gang War buddies because TLAD is focused on TLMC theme (it do not include mission peds).
+                // You can try adding the females here (if you think ladies can afford a gunfight), see TLAD peds.ide for model names.
                 bikerModels_TLMC = new string[] { "M_Y_GBIK_LO_01", "M_Y_GBIK_LO_02", "M_Y_GLOST_01", "M_Y_GLOST_02",
                     "M_Y_GLOST_03", "M_Y_GLOST_04", "M_Y_GLOST_05", "M_Y_GLOST_06", "LOSTBUDDY_01", "LOSTBUDDY_02", "LOSTBUDDY_03",
                     "LOSTBUDDY_04", "LOSTBUDDY_05", "LOSTBUDDY_06", "LOSTBUDDY_07", "LOSTBUDDY_08", "LOSTBUDDY_09", "LOSTBUDDY_10",
                     "LOSTBUDDY_11", "LOSTBUDDY_12", "LOSTBUDDY_13" };
             }
+            // Otherwise standard TLMC models will be used. TBoGT do not have unique biker model.
             else { bikerModels_TLMC = new string[] { "M_Y_GBIK_LO_01", "M_Y_GBIK_LO_02" }; }
-            //int randNum = Common.GetRandomValue(0, bikerModels_TLMC.Length);
-            //return bikerModels_TLMC[randNum];
             return Common.GetRandomCollectionValue<string>(bikerModels_TLMC);
         }
 
         /// <summary>
-        /// Gets a string representation of this event.
+        /// Returns the definition of the <see cref="MissionController"/> class
         /// </summary>
-        /// <returns>A string that represents current object</returns>
+        /// <returns>Long name of the class</returns>
         public override string ToString()
         {
-            return base.ToString();
+            return "NooseMod Controller";
         }
     }
 }

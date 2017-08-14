@@ -42,8 +42,9 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>References\LCPD First Response.dll</HintPath>
     </Reference>
-    <Reference Include="NAudio">
-      <HintPath>References\NAudio.dll</HintPath>
+    <Reference Include="Microsoft.DirectX.AudioVideoPlayback, Version=1.0.2902.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\..\..\..\..\Windows\Microsoft.NET\DirectX for Managed Code\1.0.2902.0\Microsoft.DirectX.AudioVideoPlayback.dll</HintPath>
     </Reference>
     <Reference Include="ScriptHookDotNet, Version=0.0.0.0, Culture=neutral, processorArchitecture=x86">
       <SpecificVersion>False</SpecificVersion>
@@ -81,12 +82,14 @@
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
       <DependentUpon>Settings.settings</DependentUpon>
     </Compile>
+    <Compile Include="RelationshipSwitcher.cs" />
+    <Compile Include="Settings.cs" />
     <Compile Include="StatsDataSet.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>StatsDataSet.xsd</DependentUpon>
     </Compile>
-    <None Include="World Events\ProvostPatrol.cs" />
+    <Compile Include="World Events\ProvostPatrol.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="LCPDFR\Plugins\NooseMod\Stats.mdb">
@@ -113,7 +116,7 @@
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Properties\Resources.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
+      <Generator>PublicResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
   </ItemGroup>

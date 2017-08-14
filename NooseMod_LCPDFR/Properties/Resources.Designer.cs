@@ -22,7 +22,7 @@ namespace NooseMod_LCPDFR.Properties {
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "4.0.0.0")]
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
-    internal class Resources {
+    public class Resources {
         
         private static global::System.Resources.ResourceManager resourceMan;
         
@@ -36,7 +36,7 @@ namespace NooseMod_LCPDFR.Properties {
         ///   Returns the cached ResourceManager instance used by this class.
         /// </summary>
         [global::System.ComponentModel.EditorBrowsableAttribute(global::System.ComponentModel.EditorBrowsableState.Advanced)]
-        internal static global::System.Resources.ResourceManager ResourceManager {
+        public static global::System.Resources.ResourceManager ResourceManager {
             get {
                 if (object.ReferenceEquals(resourceMan, null)) {
                     global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("NooseMod_LCPDFR.Properties.Resources", typeof(Resources).Assembly);
@@ -51,7 +51,7 @@ namespace NooseMod_LCPDFR.Properties {
         ///   resource lookups using this strongly typed resource class.
         /// </summary>
         [global::System.ComponentModel.EditorBrowsableAttribute(global::System.ComponentModel.EditorBrowsableState.Advanced)]
-        internal static global::System.Globalization.CultureInfo Culture {
+        public static global::System.Globalization.CultureInfo Culture {
             get {
                 return resourceCulture;
             }
@@ -63,7 +63,7 @@ namespace NooseMod_LCPDFR.Properties {
         /// <summary>
         ///   Looks up a localized string similar to Eliminate all ~r~threats~w~ and watch for the hostages. Good luck..
         /// </summary>
-        internal static string CALLOUT_NOOSEMOD_FIGHT_SUSPECTS {
+        public static string CALLOUT_NOOSEMOD_FIGHT_SUSPECTS {
             get {
                 return ResourceManager.GetString("CALLOUT_NOOSEMOD_FIGHT_SUSPECTS", resourceCulture);
             }
@@ -72,7 +72,7 @@ namespace NooseMod_LCPDFR.Properties {
         /// <summary>
         ///   Looks up a localized string similar to Remaining terrorists are fleeing. Don&apos;t let them escape!.
         /// </summary>
-        internal static string CALLOUT_NOOSEMOD_FLEEING_TERRORISTS {
+        public static string CALLOUT_NOOSEMOD_FLEEING_TERRORISTS {
             get {
                 return ResourceManager.GetString("CALLOUT_NOOSEMOD_FLEEING_TERRORISTS", resourceCulture);
             }
@@ -81,7 +81,7 @@ namespace NooseMod_LCPDFR.Properties {
         /// <summary>
         ///   Looks up a localized string similar to Terrorists are executing hostages! Hurry up!.
         /// </summary>
-        internal static string CALLOUT_NOOSEMOD_HOSTAGES_BEING_EXECUTED {
+        public static string CALLOUT_NOOSEMOD_HOSTAGES_BEING_EXECUTED {
             get {
                 return ResourceManager.GetString("CALLOUT_NOOSEMOD_HOSTAGES_BEING_EXECUTED", resourceCulture);
             }
@@ -90,7 +90,7 @@ namespace NooseMod_LCPDFR.Properties {
         /// <summary>
         ///   Looks up a localized string similar to Dispatch, I&apos;m in position with the officers at {0}..
         /// </summary>
-        internal static string CALLOUT_NOOSEMOD_PLAYER_IN_POS {
+        public static string CALLOUT_NOOSEMOD_PLAYER_IN_POS {
             get {
                 return ResourceManager.GetString("CALLOUT_NOOSEMOD_PLAYER_IN_POS", resourceCulture);
             }
@@ -99,7 +99,7 @@ namespace NooseMod_LCPDFR.Properties {
         /// <summary>
         ///   Looks up a localized string similar to NOOSE is requesting police backup for fleeing terrorists at {0}..
         /// </summary>
-        internal static string CALLOUT_NOOSEMOD_POLICE_BACKUP_REQUIRED {
+        public static string CALLOUT_NOOSEMOD_POLICE_BACKUP_REQUIRED {
             get {
                 return ResourceManager.GetString("CALLOUT_NOOSEMOD_POLICE_BACKUP_REQUIRED", resourceCulture);
             }
@@ -108,16 +108,16 @@ namespace NooseMod_LCPDFR.Properties {
         /// <summary>
         ///   Looks up a localized string similar to Wait for the second team to arrive. Do not charge in to the target..
         /// </summary>
-        internal static string CALLOUT_NOOSEMOD_STANDBY {
+        public static string CALLOUT_NOOSEMOD_STANDBY {
             get {
                 return ResourceManager.GetString("CALLOUT_NOOSEMOD_STANDBY", resourceCulture);
             }
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Available units respond to the terrorist activity in {0}..
+        ///   Looks up a localized string similar to Available NOOSE units respond to the terrorist activity in {0}..
         /// </summary>
-        internal static string CALLOUT_NOOSEMOD_TERRORIST_ACTIVITY {
+        public static string CALLOUT_NOOSEMOD_TERRORIST_ACTIVITY {
             get {
                 return ResourceManager.GetString("CALLOUT_NOOSEMOD_TERRORIST_ACTIVITY", resourceCulture);
             }
@@ -126,7 +126,7 @@ namespace NooseMod_LCPDFR.Properties {
         /// <summary>
         ///   Looks up a localized string similar to Officer is requesting NOOSE presence for a criminal in a gun spree in {0}..
         /// </summary>
-        internal static string CALLOUT_NOOSEMOD_TERRORIST_ACTIVITY_2 {
+        public static string CALLOUT_NOOSEMOD_TERRORIST_ACTIVITY_2 {
             get {
                 return ResourceManager.GetString("CALLOUT_NOOSEMOD_TERRORIST_ACTIVITY_2", resourceCulture);
             }
@@ -135,7 +135,7 @@ namespace NooseMod_LCPDFR.Properties {
         /// <summary>
         ///   Looks up a localized string similar to SOS Message received, relaying orders: an officer is requesting NOOSE presence in {0}..
         /// </summary>
-        internal static string CALLOUT_NOOSEMOD_TERRORIST_ACTIVITY_3 {
+        public static string CALLOUT_NOOSEMOD_TERRORIST_ACTIVITY_3 {
             get {
                 return ResourceManager.GetString("CALLOUT_NOOSEMOD_TERRORIST_ACTIVITY_3", resourceCulture);
             }
@@ -144,7 +144,7 @@ namespace NooseMod_LCPDFR.Properties {
         /// <summary>
         ///   Looks up a localized string similar to We have a possible terrorist activity in {0}, NOOSE presence is required..
         /// </summary>
-        internal static string CALLOUT_NOOSEMOD_TERRORIST_ACTIVITY_4 {
+        public static string CALLOUT_NOOSEMOD_TERRORIST_ACTIVITY_4 {
             get {
                 return ResourceManager.GetString("CALLOUT_NOOSEMOD_TERRORIST_ACTIVITY_4", resourceCulture);
             }
@@ -153,16 +153,16 @@ namespace NooseMod_LCPDFR.Properties {
         /// <summary>
         ///   Looks up a localized string similar to A Biker Gang has wrecked the peace in {0}, NOOSE presence is required..
         /// </summary>
-        internal static string CALLOUT_NOOSEMOD_TERRORIST_ACTIVITY_5 {
+        public static string CALLOUT_NOOSEMOD_TERRORIST_ACTIVITY_5 {
             get {
                 return ResourceManager.GetString("CALLOUT_NOOSEMOD_TERRORIST_ACTIVITY_5", resourceCulture);
             }
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to SOS Message received, relaying orders: Assault and Battery confirmed at {0}..
+        ///   Looks up a localized string similar to SOS Message received, relaying orders: Assault and Battery confirmed at {0}, available NOOSE units, please respond..
         /// </summary>
-        internal static string CALLOUT_NOOSEMOD_TERRORIST_ACTIVITY_6 {
+        public static string CALLOUT_NOOSEMOD_TERRORIST_ACTIVITY_6 {
             get {
                 return ResourceManager.GetString("CALLOUT_NOOSEMOD_TERRORIST_ACTIVITY_6", resourceCulture);
             }

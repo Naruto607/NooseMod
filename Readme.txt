@@ -161,6 +161,7 @@ In order to test or recompile my source code, the requirements needed are:
 2.	LCPDFR version 1.1 (includes .NET ScriptHook) (the current version that's stable for 2 or more years)
 3.	Visual Studio 2012 or later with .NET Framework 4.5
 4.	Basic knowledge of C# programming language and GTA Scripting in C# language
+5.	(more importantly) Knowledge on LCPDFR API and how it works
 
 
 How to Work:
@@ -174,7 +175,7 @@ Installation:
 ====
 1.	Put NooseMod.net.dll, NooseMod.net.dll.config, NooseMod.ini and NooseMod folder into «yourgamedir»\LCPDFR\plugins directory.
 2.	Put Audio folder to «yourgamedir»\LCPDFR directory.
-3.	Put NAudio.dll to «yourgamedir» directory. If you have it from other mods (like JulioNIB's), disregard.
+3.	Put Microsoft.DirectX.AudioVideoPlayback.dll to «yourgamedir» directory.
 4.	Edit NooseMod.ini to your preferences.
 5.	Start up the game and go on duty.
 
@@ -182,6 +183,7 @@ Installation:
 Uninstallation:
 ====
 Simply remove NooseMod.net.dll, NooseMod.ini and NooseMod folder from «yourgamedir»\LCPDFR\plugins directory and you're done.
+Remove also Microsoft.DirectX.AudioVideoPlayback.dll from «yourgamedir» directory because you don't need it anymore.
 If you wish to keep the Stats you made so far, please store the Stats.mdb (from the NooseMod folder) to a safe location.
 
 
