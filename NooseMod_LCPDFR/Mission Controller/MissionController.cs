@@ -33,11 +33,6 @@ namespace NooseMod_LCPDFR.Mission_Controller
         // Initialize
         #region Initialization
         /// <summary>
-        /// Your last played mission
-        /// </summary>
-        public Int16 lastPlayedMission = -1;
-
-        /// <summary>
         /// Missions that are loaded
         /// </summary>
         //public List<Mission> loadedMissions = new List<Mission>(2 ^ SettingsFile.Open("NooseMod.ini").GetValueInteger("Missions", "ListRanging", 3));
@@ -172,21 +167,21 @@ namespace NooseMod_LCPDFR.Mission_Controller
         }
 
         /// <summary>
-        /// Loads last saved game and stores it into <see cref="lastPlayedMission"/>.
-        /// It is used to retrieve information based on mission number, and stored progressively after successful attempt of missions.
+        /// Loads last saved game.
         /// </summary>
-        public void LoadGame()
+        /// <returns>Mission number that starts from -1</returns>
+        public Int16 LoadGame()
         {
-            // Read the save path
-            // Directory is relative to the game path where ScriptHookDotNet and LCPDFR are installed
+            Int16 tempVal = -1;
             try
             {
                 StreamReader streamReader = new StreamReader("LCPDFR\\Plugins\\NooseMod\\save.txt");
-                this.lastPlayedMission = Int16.Parse(streamReader.ReadLine());
+                tempVal = Int16.Parse(streamReader.ReadLine());
                 streamReader.Close();
-                Log.Debug("Game has been loaded with return value " + this.lastPlayedMission, this.ToString());
+                Log.Debug("Game has been loaded with return value " + tempVal, this.ToString());
             }
             catch (Exception ex) { Log.Error("Unable to read or write save.txt: " + ex, this.ToString()); }
+            return tempVal;
         }
 
         /// <summary>

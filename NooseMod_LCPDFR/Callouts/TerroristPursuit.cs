@@ -106,7 +106,8 @@ namespace NooseMod_LCPDFR.Callouts
             this.AddMinimumDistanceCheck(80f, this.spawnPosition);
 
             // Set up message
-            this.CalloutMessage = string.Format(Functions.GetStringFromLanguageFile(Resources.CALLOUT_NOOSEMOD_POLICE_BACKUP_REQUIRED), Functions.GetAreaStringFromPosition(this.spawnPosition));
+            //this.CalloutMessage = string.Format(Functions.GetStringFromLanguageFile(Resources.CALLOUT_NOOSEMOD_POLICE_BACKUP_REQUIRED), Functions.GetAreaStringFromPosition(this.spawnPosition));
+            this.CalloutMessage = string.Format(Resources.CALLOUT_NOOSEMOD_POLICE_BACKUP_REQUIRED, Functions.GetAreaStringFromPosition(this.spawnPosition));
             int rand = Common.GetRandomValue(0, 3);
             switch (rand)
             {
@@ -253,6 +254,10 @@ namespace NooseMod_LCPDFR.Callouts
             // End this script is pursuit is no longer running, e.g. because all suspects are dead
             if (!Functions.IsPursuitStillRunning(this.pursuit))
             {
+                // You'll get nothing if cashGained is 0
+                int cashGained = (cashForArrestedTerrors * arrestCount) + (cashForKilledTerrors * killCount);
+                Functions.PrintText("Few suspects are at large. We'll get them next time. +$" + cashGained + " for your service.", 25000);
+                LPlayer.LocalPlayer.Money += cashGained;
                 this.SetCalloutFinished(true, true, true);
                 this.End();
             }

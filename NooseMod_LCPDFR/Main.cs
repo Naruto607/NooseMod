@@ -309,7 +309,7 @@ namespace NooseMod_LCPDFR
                     if (Functions.IsKeyDown(Keys.Left))
                     {
                         keyPress--;
-                        if (keyPress < 0) { keyPress = 3; }
+                        if (keyPress < 0) { keyPress = 2; }
                     }
                     else if (Functions.IsKeyDown(Keys.Right))
                     {
