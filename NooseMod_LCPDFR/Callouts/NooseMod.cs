@@ -405,66 +405,62 @@ namespace NooseMod_LCPDFR.Callouts
         /// </summary>
 		public NooseMod()
         {
-            try
+            // Load last saved game
+            lastPlayedMission = controller.LoadGame();
+
+            // increment the current value (if -1, it will load the list zero)
+            lastPlayedMission++;
+
+            // Time check, if a mission is called on a specified time
+            Mission currentMissionToPlayNow = controller.missionVariableCheckup(lastPlayedMission);
+            Log.Debug("Initializing mission with the name: " + currentMissionToPlayNow.Name, this);
+
+            // Get Mission Time
+            TimeSpan currentTime = World.CurrentDayTime;
+            bool isExceedingMissionList = lastPlayedMission >= controller.loadedMissions.Count;
+            if (isExceedingMissionList == false)
             {
-                // Load last saved game
-                lastPlayedMission = controller.LoadGame();
-
-                // increment the current value (if -1, it will load the list zero)
-                lastPlayedMission++;
-
-                // Time check, if a mission is called on a specified time
-                Mission currentMissionToPlayNow = controller.missionVariableCheckup(lastPlayedMission);
-                Log.Debug("Initializing mission with the name: " + currentMissionToPlayNow.Name, this);
-
-                // Get Mission Time
-                TimeSpan currentTime = World.CurrentDayTime;
-                bool isExceedingMissionList = lastPlayedMission >= controller.loadedMissions.Count;
-                if (isExceedingMissionList == false)
+                if (currentMissionToPlayNow.IsMissionTimeSpecified)
                 {
-                    if (currentMissionToPlayNow.IsMissionTimeSpecified)
+                    TimeSpan interval1 = currentMissionToPlayNow.MissionTime - TimeSpan.FromHours(1);
+                    TimeSpan interval2 = currentMissionToPlayNow.MissionTime + TimeSpan.FromHours(1);
+                    TimeSpan interval3 = new TimeSpan(23, 59, 0);
+
+                    if (interval1.Hours == -1)
                     {
-                        TimeSpan interval1 = currentMissionToPlayNow.MissionTime - TimeSpan.FromHours(1);
-                        TimeSpan interval2 = currentMissionToPlayNow.MissionTime + TimeSpan.FromHours(1);
-                        TimeSpan interval3 = new TimeSpan(23, 59, 0);
-
-                        if (interval1.Hours == -1)
-                        {
-                            interval1 = new TimeSpan(23, 0, 0);
-                        }
-
-                        // Automatically start when the game clock is between the defined intervals.
-                        // For example, if the mission time defined is at 00:00 precise, callout will start
-                        //  between 23:00 and 01:00. For the best effect and response time, using Time Lock is recommended,
-                        //  but it will limit access to some features, for example, if you have The Wasteland plugin.
-                        if (currentTime >= interval1 && currentTime <= interval2)
-                        {
-                            Log.Debug("Mission started between " + interval1 + " and " + interval2, this);
-                            activeMission = controller.PlayMission(lastPlayedMission);
-                        }
-
-                        // Check if the mission starts at 00:00, as from 23:59 it will reset to 00:00
-                        else if (currentTime >= interval1 && currentTime <= interval3 && currentTime >= new TimeSpan(0, 0, 0) && currentTime <= interval2)
-                        {
-                            Log.Debug("Mission started between " + interval1 + " and " + interval2, this);
-                            activeMission = controller.PlayMission(lastPlayedMission);
-                        }
-
-                        // No resources loaded, so if not within specified time, end it from the call base
-                        else { Log.Debug("Mission ended: " + currentTime + " is not in specified interval", this); base.End(); return; }
+                        interval1 = new TimeSpan(23, 0, 0);
                     }
 
-                    // Start immediately the mission if the mission time is not specified
-                    else { Log.Debug("Mission started without time check", this); activeMission = controller.PlayMission(lastPlayedMission); }
+                    // Automatically start when the game clock is between the defined intervals.
+                    // For example, if the mission time defined is at 00:00 precise, callout will start
+                    //  between 23:00 and 01:00. For the best effect and response time, using Time Lock is recommended,
+                    //  but it will limit access to some features, for example, if you have The Wasteland plugin.
+                    if (currentTime >= interval1 && currentTime <= interval2)
+                    {
+                        Log.Debug("Mission started between " + interval1 + " and " + interval2, this);
+                        activeMission = controller.PlayMission(lastPlayedMission);
+                    }
+
+                    // Check if the mission starts at 00:00, as from 23:59 it will reset to 00:00
+                    else if (currentTime >= interval1 && currentTime <= interval3 && currentTime >= new TimeSpan(0, 0, 0) && currentTime <= interval2)
+                    {
+                        Log.Debug("Mission started between " + interval1 + " and " + interval2, this);
+                        activeMission = controller.PlayMission(lastPlayedMission);
+                    }
+
+                    // No resources loaded, so if not within specified time, end it from the call base
+                    else { Log.Debug("Mission ended: " + currentTime + " is not in specified interval", this); base.End(); return; }
                 }
 
-                    // End the callout from the base if the save file is exceeding the mission list
-                else { Log.Debug("Mission ended: " + lastPlayedMission + " exceeds the list of " + controller.loadedMissions.Count + " missions", this); base.End(); return; }
-
-                // Use Mission Location to start
-                spawnPosition = controller.entryLoc.Position;
+                // Start immediately the mission if the mission time is not specified
+                else { Log.Debug("Mission started without time check", this); activeMission = controller.PlayMission(lastPlayedMission); }
             }
-            catch (Exception ex) { Log.Error("Cannot start NooseMod: " + ex, this); base.End(); return; }
+
+                // End the callout from the base if the save file is exceeding the mission list
+            else { Log.Debug("Mission ended: " + lastPlayedMission + " exceeds the list of " + controller.loadedMissions.Count + " missions", this); base.End(); return; }
+
+            // Use Mission Location to start
+            spawnPosition = controller.entryLoc.Position;
 
             // Register location
             ShowCalloutAreaBlipBeforeAccepting(spawnPosition, 30.0f);
