@@ -10,7 +10,7 @@ namespace NooseMod_LCPDFR.Mission_Controller
     /// <summary>
     /// Class that controls the number of missions available
     /// </summary>
-	internal class Mission
+	public class Mission
 	{
         /// <summary>
         /// The name of a mission

@@ -1,7 +1,10 @@
 ﻿NOOSE Mod (LCPDFR Edition) v0.1
 by Naruto 607
 
-This script is a contribution to LCPDFR by adding new features of terrorist threat and other crime things.
+Many thanks to LtFlash for suggestions and advices.
+It's because of him you have this fine and ready-for-debug source code.
+
+This script is a contribution to LCPDFR by adding a new feature: Terrorist threat in Liberty City.
 It is based from GTAIV NooseMod 0.1 BETA by _hax which had been left for years and still under beta.
 Much of bugs are introduced, and yet it is only working for GTA IV version 1.0.4.0 and lower, which current LCPDFR version does not support it.
 
@@ -20,11 +23,12 @@ However, they are not stupid - they will take hostages, so you can't let them ge
 Features:
 ====
 1.	Difficulty Settings: NOOSE Mod offers 3 difficulties:
-		Easy - Enemies will have full health and will be marked on the map
-		Medium - Enemies will have full health + 50% armor and there will be no blips
-		Hard - Enemies will have 100% armor and have increased shoot accuracy (combining Medium difficulty ones)
-	To choose difficulties, you can walk to the Chief of Police's office room (in the police station), enter the marker, hit the Interaction key and choose one.
-	Be note that if you enabled Hardcore mode in LCPDFR Settings, NOOSE Mod settings will treat it as Hard.
+		Easy - Enemies will have full health and will be marked on the map (old ones have 50% health)
+		Medium - Enemies will have full health + 50% armor and there will be no blips (old ones only have full health and no armor)
+		Hard - Enemies will have 100% armor and have increased shoot accuracy (combining Medium difficulty ones) (old ones only armor is added)
+	To choose difficulties, you can walk in to the Chief of Police's office room (in the police station) and get close to the left hand side of the desk where you come in.
+	Helper will be provided then.
+	Be note that if you enabled Hardcore mode in LCPDFR Settings, NOOSE Mod settings will treat it as Hard and you cannot change the difficulty.
 	You can also set manually on your own from the NooseMod.ini provided.
 
 2.	Random Callouts: For every missions (starting from Introduction to the finale "The Warehouse") you will be informed via Dispatch callouts.
@@ -46,7 +50,7 @@ Features:
 	You should be able to open that file using Microsoft Office you have (it is saved as 2002-2003 version, so I think it should work on 2003 and later).
 	Your progress can also be called ingame by entering the SHDN Console (by pressing the "`" or "~" button, one between Esc, 1, and Tab keys) and type "ShowNooseModStats" w/o quotes.
 
-4.	Progress Reset: You can be able to reset the progress, either is complete or incomplete, by accessing a terminal at where you pick up the partner. It is marked, so you won't confuse which one.
+4.	Progress Reset: You can be able to reset the progress, either is complete or incomplete, by accessing a terminal at where you pick up the partner.
 		Use the displayed keys on screen to choose if you want to accept or deny the reset.
 		When the progress is reset, all the stats will be cleared and the mission will start again from Mission 1 by waiting for the Dispatch callout when on duty.
 
@@ -57,8 +61,8 @@ Features:
 	Be note that you cannot, for example, start Mission 2 until you completed Mission 1, and you cannot start any missions if all missions completed.
 	Completed missions cannot be restarted (or forced to start again).
 
-	To force a callout, enter the SHDN Console (by pressing the "`" or "~" button, one between Esc, 1, and Tab keys) and type NooseMod to start.
-	If you are running other than a SWAT member, type TerroristPursuit to start a unique police pursuit.
+	To force a callout, enter the SHDN Console (by pressing the "`" or "~" button, one between Esc, 1, and Tab keys) and type "StartCallout NooseMod" (w/o quotes) to start.
+	If you are running other than a SWAT member, type "StartCallout TerroristPursuit" (w/o quotes) to start a unique police pursuit.
 
 7.	Time-sensitive Response: Missions 2 and 5 offer time-sensitive response for the Dispatch callout to work.
 	For example: if the actual beta mod starts Bus Stop mission at 2 o'clock post-midnight precise, this one will start the mission between 1 and 3 (no fade-in and outs, real Dispatch callout).
@@ -66,7 +70,7 @@ Features:
 	Using Time Lock (Real Time Duration or Sync Game Time to System Time) (Native Trainer) may be helpful in some scenes.
 	Be note that during that time, if you receive a callout other than this, you can respond or disregard. It's all yours.
 
-8.	Normal Activites + Mission Waiting: Kinda boring to wait for the mission to get informed via Dispatch.
+8.	Normal Activites + Mission Waiting: You may get bored if you wait for Dispatch to call in the "terrorist activity" or the mission.
 	If you happen to get bored, don't hesitate to partake the police activities (pursuit, arrest, etc.) OR force the callout to come to you.
 
 9.	Intelligent AI: Terrorists tend to get impatient the longer you respond to the crime scene.
@@ -91,7 +95,7 @@ Features:
 	Friendly Officers casualties: -90$ per person
 	Squad casualties: -150$ per person
 
-	Always ensure paramedics are around the crime scene to prevent Friendly Officers or Squad casualties from being increased.
+	Always ensure paramedics are around the crime scene to prevent Friendly Officers or Squad casualties from being increased (will be proposed in the later version).
 
 	At the end of the battle, usually the scene will end up with many corpses.
 	If you have vdH MedicalExaminer/Coroner Mod by Abraxas, you can issue a coroner or METT to clean up the scene before continuing with your patrol duty.
@@ -100,12 +104,14 @@ Features:
 12.	Lethal Force: Terrorists give no mercy to law enforcers. If you have trouble of your squads getting too cocky to shoot them, authorize Lethal Force.
 
 13.	Weapons: In this version, you can not also rearm your guns from the police cruisers, but you can also rearm from Enforcer. For the starter kit you will get a pistol every time you are on duty,
-		but, depending on the settings, you will get 2 primary weapons and secondary ammo, or 2 primary weapons and a secondary weapon.
+		but, depending on the settings, you will get 2 primary weapons + ammo and secondary ammo, or 2 primary weapons and a secondary weapon + ammo.
 	Terrorist weapons will also be varied and accustomed randomly to have a random atmosphere. If you enabled settings for TBoGT weapons, you will see some terrorists carrying TBoGT weapons.
 	It will be disabled automatically if using IV or TLAD regardless of changes made.
 
-14.	Partner System: You will get two additional SWAT members joining you after you get a partner and selected a vehicle. They will be deleted if you are off duty or they are dead.
-	If you have no partners and responding to a mission, one additional squad group with 4 NOOSE SWATs will be dispatched in a NOOSE Cruiser, NOOSE Patriot, or Enforcer and following your back once joined.
+14.	Partner System: Your partners are counted as a squad member. This is because, when you are on duty with specific model (example: standard cop), the partners will bear the same model as yours.
+	In general LCPDFR API coding, you don't have to put in extra commands to make your partner uses the SWAT model.
+	If you have a partner, two squad members will be spawned if you are in car. Two partners - a squad member. If you have 3 at max, script will not spawn additional members.
+	If you have no partners and responding to a mission, one additional squad group with 4 NOOSE SWATs will be dispatched in a NOOSE Cruiser, NOOSE Patriot, or Enforcer and enroute to the crime scene.
 	When the mission is complete, the squad will go back to station or return to duty.
 
 15.	Swap Criminals to Biker Gang Members: One of my specials in this mod. This turns regular criminals (terrorists) into a bunch of Biker Gang members causing terror.
@@ -118,12 +124,15 @@ Features:
 		Now they are attracted to bank robbery and hostage situation demanding ransom to rich families.
 		Known violences: Gang-related Violence, Arms Dealing, Drug Trafficking, Grand Theft Auto
 
+	Note that default terrorist model (M_M_GUNNUT_01) still spawns regardless of INI settings.
+
 16.	Safe Mode: If you are using too many resources that make your game breaks or having script crashes, Safe Mode allows you to remove ambient police vehicles, officers, and roadblocks (when you arrived at the scene).
 	This mode only enables NOOSE Backup that will arrive to the crime scene, and only adds you, your squad, terrorists, and hostages.
 	Enabling this will also disable Police Officer casualties count, which will significantly affect your profit to an increased one.
 
 17. DYOM: You can be able to create a new mission by creating a new text file with format xxxyyyy, where
 		x = mission number, 3-digit integer with max number of 999, start with two zeros if a number, a zero if two numbers, none if three
+			(used for aesthetic purposes and to better-manage the mission order).
 		y = mission name, string (text)
 
 	Inside the blank text file you made, use the template provided or fill in the following format:
@@ -139,11 +148,13 @@ Features:
 	Don't forget to conclude with a new line underneath the last hostage spawn coordinates before saving.
 	If you can't understand it by explanation, in the NooseMod folder contains 8 text files; open one of them to see how it forms.
 
+	Note: If you are building a new mission, don't forget to create a new row in Stats.mdb @ MissionStats table.
+
 18. DYOM Builder: ATM, to create a new mission, you must record the coordinates while playing GTA IV, and write it in a new text file manually. The tools you need are simple:
 		- sjaak327's Native Trainer
 		- any screen-capturing program such as Fraps (free version allows you saving image in BMP format)
 		- of course the GTA IV or EFLC in latest version
-		- Notepad
+		- and as always for everyone who needs to write notes: Notepad
 
 	Enable in Trainer "Display Coordinates" or similar like that and then find a good spot for entry point. Grab a shot.
 	Place a coordinate where a terrorist will show. Grab a shot. Repeat until you have defined enough terrorists.
@@ -151,6 +162,18 @@ Features:
 	Exit the game and view the screenshots. Write the coordinates based on the template.
 
 	In the new version I will include a script for building a NooseMod mission.
+
+
+Callouts Available:
+====
+1.	NooseMod: Main callout that comprises of 8 missions by default.
+
+2.	Terrorist Pursuit: Special callout for non-SWAT members (police officers or FIB) to aid NOOSE officers in apprehending or
+		executing the fleeing terrorists from the crime scene
+
+To start one of those, type StartCallout followed by one of these while in SHDN console:
+1.	NooseMod: NooseMod callout
+2.	TerroristPursuit: Terrorist Pursuit callout
 
 
 Requirements:
@@ -223,7 +246,8 @@ You are also free to modify or enhance this source code or the compiled library 
 
 Notes for _hax (the first person who built this NooseMod Beta script):
 ====
-I kinda like this mod, but it's a pain in the ass telling that my latest game (GTA IV 1.0.7.0 and EFLC 1.1.2.0) do not support it anymore unless if I downgrade, which I have no idea where to start.
+I kinda like this mod, but it's a pain in the ass telling that my latest game (GTA IV 1.0.7.0 and EFLC 1.1.2.0) do not support it anymore unless if I downgrade,
+	(and using older version of SHDN) which I have no idea where to start.
 Also, it contains bugs based from the videos I saw. And the bad news is: your mod is never meant to be updated since it was released 8 years ago.
 I am updating this on my own, with the help of ILSpy, thanks to Aquilon96's idea on GTAGaming Forums that already closed. AND by placing it on LCPDFR API (plugin) since it's a part of policing.
 To note, I don't know how to PM you because GTAGaming has come to an end, and yet I haven't seen you talking for VERY LONG.

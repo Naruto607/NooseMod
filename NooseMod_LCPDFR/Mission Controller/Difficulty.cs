@@ -4,7 +4,7 @@ namespace NooseMod_LCPDFR.Mission_Controller
     /// <summary>
     /// NooseMod Difficulty
     /// </summary>
-    internal enum Difficulty
+    public enum Difficulty
     {
         /// <summary>
         /// Easy: Terrorists spawn with blips and normal health

@@ -37,10 +37,16 @@
     <PlatformTarget>x86</PlatformTarget>
     <OutputPath>bin\x86\Release\</OutputPath>
   </PropertyGroup>
+  <PropertyGroup>
+    <SignAssembly>false</SignAssembly>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="LCPD First Response, Version=1.0.5477.29557, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>References\LCPD First Response.dll</HintPath>
+      <HintPath>D:\!shdn_dev_files\LCPDFR-API-master\References\LCPD First Response.dll</HintPath>
+    </Reference>
+    <Reference Include="LCPDFR.Networking">
+      <HintPath>D:\!shdn_dev_files\LCPDFR-API-master\References\LCPDFR.Networking.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.DirectX.AudioVideoPlayback, Version=1.0.2902.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35">
       <SpecificVersion>False</SpecificVersion>
@@ -48,14 +54,15 @@
     </Reference>
     <Reference Include="ScriptHookDotNet, Version=0.0.0.0, Culture=neutral, processorArchitecture=x86">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>References\ScriptHookDotNet.dll</HintPath>
+      <HintPath>D:\!shdn_dev_files\LCPDFR-API-master\References\ScriptHookDotNet.dll</HintPath>
     </Reference>
     <Reference Include="SlimDX, Version=4.0.13.43, Culture=neutral, PublicKeyToken=b1b0c32fd1ffe4f9, processorArchitecture=x86">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>References\SlimDX.dll</HintPath>
+      <HintPath>D:\!shdn_dev_files\LCPDFR-API-master\References\SlimDX.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Drawing" />
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
@@ -65,12 +72,14 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Callouts\NooseMod.cs" />
+    <Compile Include="Callouts\Pursuit.cs" />
     <Compile Include="Callouts\TerroristPursuit.cs" />
     <Compile Include="Mission Controller\Difficulty.cs" />
     <Compile Include="Mission Controller\Mission.cs" />
     <Compile Include="Mission Controller\MissionController.cs" />
     <Compile Include="Mission Controller\MissionState.cs" />
     <Compile Include="Main.cs" />
+    <Compile Include="Mission Controller\NetworkMessages.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
@@ -83,11 +92,16 @@
       <DependentUpon>Settings.settings</DependentUpon>
     </Compile>
     <Compile Include="RelationshipSwitcher.cs" />
-    <Compile Include="Settings.cs" />
     <Compile Include="StatsDataSet.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>StatsDataSet.xsd</DependentUpon>
+    </Compile>
+    <Compile Include="StatsForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="StatsForm.Designer.cs">
+      <DependentUpon>StatsForm.cs</DependentUpon>
     </Compile>
     <Compile Include="World Events\ProvostPatrol.cs" />
   </ItemGroup>
@@ -118,6 +132,9 @@
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>PublicResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Include="StatsForm.resx">
+      <DependentUpon>StatsForm.cs</DependentUpon>
     </EmbeddedResource>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

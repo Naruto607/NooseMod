@@ -17,27 +17,37 @@
 
 //    Greetings to Sam @ LCPDFR.com for this wonderful API feature.
 
+using GTA.Native;
+using NooseMod_LCPDFR.Mission_Controller;
+using NooseMod_LCPDFR.StatsDataSetTableAdapters;
+using System.Data;
+using System.Data.OleDb;
+using System.IO;
+using System.Text;
+
 namespace NooseMod_LCPDFR
 {
     #region Uses
+    using System;
+    using System.Windows.Forms;
+
+    using NooseMod_LCPDFR.Callouts;
+    using NooseMod_LCPDFR.World_Events; // WIP
+
     using GTA;
-    using GTA.Native;
+
+    using LCPDFR.Networking.User;
+
     using LCPD_First_Response.Engine;
     using LCPD_First_Response.Engine.Input;
+    using LCPD_First_Response.Engine.Networking;
     using LCPD_First_Response.Engine.Scripting.Plugins;
     using LCPD_First_Response.Engine.Timers;
     using LCPD_First_Response.LCPDFR.API;
-    using NooseMod_LCPDFR.Callouts;
-    using NooseMod_LCPDFR.Mission_Controller;
-    using NooseMod_LCPDFR.StatsDataSetTableAdapters;
-    using NooseMod_LCPDFR.World_Events; // WIP
+
+    using LCPDFR.Networking;
+
     using SlimDX.XInput;
-    using System;
-    using System.Data;
-    using System.Data.OleDb;
-    using System.IO;
-    using System.Text;
-    using System.Windows.Forms;
     #endregion
 
     /// <summary>
@@ -68,7 +78,7 @@ namespace NooseMod_LCPDFR
         private LVehicle currentVeh;
 
         /// <summary>
-        /// Settings File
+        /// NooseMod Settings File
         /// </summary>
         internal SettingsFile SettingsIni = SettingsFile.Open("LCPDFR\\Plugins\\NooseMod.ini");
 
@@ -106,6 +116,15 @@ namespace NooseMod_LCPDFR
         /// Table Adapter for <see cref="StatsDataSet"/> representing Mission Stats table
         /// </summary>
         internal MissionStatsTableAdapter missionstatsadp = new MissionStatsTableAdapter();
+
+        Blip ChiefOfPoliceRoomBlip, PartnerRoomBlip;
+        bool blipCreated = new Boolean();
+
+        /*/// <summary>
+        /// The Stats Form, not sure how am I gonna use this...
+        /// </summary>
+        internal StatsForm statsForm = new StatsForm();
+        // */
         #endregion
 
         /// <summary>
@@ -118,7 +137,14 @@ namespace NooseMod_LCPDFR
 
             // Listen for on duty event
             Functions.OnOnDutyStateChanged += this.Functions_OnOnDutyStateChanged;
+
+            // Listen when player has joined network game
+            Networking.JoinedNetworkGame += this.Networking_JoinedNetworkGame;
             controller.GetMissionData();
+
+            // Check if Stats file exists
+            // Actually NooseMod folder contains Stats already, if not exists, it'll throw an error automatically
+            //if (File.Exists(Game.InstallFolder + "\\LCPDFR\\Plugins\\NooseMod\\Stats.mdb"))
 
             // Open connection adapters (no conditions set)
             try
@@ -149,12 +175,19 @@ namespace NooseMod_LCPDFR
                 Log.Info("Overall Stats Adapter details: " + overallstatsadp.Connection.ConnectionString, this); // this will return a path to NooseMod folder in LCPDFR.log
                 Log.Info("Server Version:  " + overallstatsadp.Connection.ServerVersion, this);
             }
-            else 
+            else
             {
-                overallstatsadp.Connection.Close();
-                missionstatsadp.Connection.Close();
-                Log.Info("Started without database system", this); 
+                try
+                {
+                    overallstatsadp.Connection.Close();
+                    missionstatsadp.Connection.Close();
+                }
+                catch (Exception ex) { Log.Error("Cannot close the connection: " + ex, this); }
+                Log.Info("Started without database system", this);
             }
+
+            // Just to make sure
+            SettingsIni.Load();
         }
 
         /// <summary>
@@ -168,6 +201,7 @@ namespace NooseMod_LCPDFR
             {
                 // SWAT model used: register NooseMod
                 Functions.RegisterCallout(typeof(NooseMod)); // Progressive through gameplay
+                Functions.RegisterCallout(typeof(Pursuit)); // Regular Pursuit for bypassing the time check
 
                 if (overallstatsadp.Connection.State == ConnectionState.Open)
                 {
@@ -196,6 +230,94 @@ namespace NooseMod_LCPDFR
         }
 
         /// <summary>
+        /// Called when player has joined a network game.
+        /// </summary>
+        private void Networking_JoinedNetworkGame()
+        {
+            // The codes below are taken from the latest pull of LCPDFR API on GitHub (or latest download from LCPDFR website).
+            // If you are the developer feel free to have fun with this handler (or add one other handler and mod it your way).
+
+            // Just to be sure.
+            if (Networking.IsInSession && Networking.IsConnected)
+            {
+                // When client, listen for messages. Of course, this could be changed to work for host as well.
+                // It's recommended to use the same string identifier all the time.
+                if (!Networking.IsHost)
+                {
+                    Client client = Networking.GetClientInstance();
+                    client.AddUserDataHandler(this.ToString(), NetworkMessages.RequestBackup, this.NeedBackupHandlerFunction);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Called when <see cref="NetworkMessages.RequestBackup"/> has been received.
+        /// </summary>
+        /// <param name="sender">The sender.</param>
+        /// <param name="message">The message.</param>
+        private void NeedBackupHandlerFunction(NetworkServer sender, ReceivedUserMessage message)
+        {
+            // The codes below are taken from the latest pull of LCPDFR API on GitHub (or latest download from LCPDFR website).
+            // If you are the developer feel free to have fun with this handler (or add one other handler and mod it your way).
+
+            // Read position and get associated area.
+            Vector3 position = message.ReadVector3();
+            string area = Functions.GetAreaStringFromPosition(position);
+
+            // Display message and blip.
+            Functions.PrintText(string.Format("Officer {0} requests backup at {1}", sender.SafeName, area), 10000);
+            Blip areaBlip = Functions.CreateBlipForArea(position, 25f);
+
+            // Play sound.
+            int rand = Common.GetRandomValue(0, 4);
+            switch (rand)
+            {
+                case 0:
+                    Functions.PlaySoundUsingPosition("THIS_IS_CONTROL UNITS_PLEASE_BE_ADVISED INS_I_NEED_A_UNIT_FOR CRIM_AN_OFFICER_IN_NEED_OF_ASSISTANCE IN_OR_ON_POSITION", position);
+                    break;
+                case 1:
+                    Functions.PlaySoundUsingPosition("THIS_IS_CONTROL ASSISTANCE_REQUIRED FOR CRIM_AN_OFFICER_IN_NEED_OF_ASSISTANCE IN_OR_ON_POSITION", position);
+                    break;
+                case 2:
+                    Functions.PlaySoundUsingPosition("INS_THIS_IS_CONTROL_WE_HAVE CRIM_AN_OFFICER_IN_NEED_OF_ASSISTANCE IN_OR_ON_POSITION", position);
+                    break;
+                case 3:
+                    Functions.PlaySoundUsingPosition("ALL_UNITS_ALL_UNITS INS_WE_HAVE CRIM_AN_SOS FOR CRIM_AN_OFFICER_IN_NEED_OF_ASSISTANCE IN_OR_ON_POSITION", position);
+                    break;
+            }
+
+            // Cleanup.
+            DelayedCaller.Call(parameter => areaBlip.Delete(), this, 20000);
+        }
+
+        // The function for this method is still beta
+        #region Blip Controller
+        private void PoliceDept_AddBlip()
+        {
+            if (lcpdfrPlayer.IsInPoliceDepartment && blipCreated == false)
+            {
+                ChiefOfPoliceRoomBlip = Blip.AddBlipContact(ChiefOfPoliceRoom);
+                ChiefOfPoliceRoomBlip.Display = BlipDisplay.ArrowOnly;
+                ChiefOfPoliceRoomBlip.Icon = BlipIcon.Misc_Boss;
+                ChiefOfPoliceRoomBlip.Name = "Difficulty Selection";
+                ChiefOfPoliceRoomBlip.Color = BlipColor.Red;
+                PartnerRoomBlip = Blip.AddBlipContact(PartnerRoom);
+                PartnerRoomBlip.Display = BlipDisplay.ArrowOnly;
+                PartnerRoomBlip.Icon = BlipIcon.Building_Safehouse;
+                PartnerRoomBlip.Name = "Reset NooseMod Mission Progress";
+                PartnerRoomBlip.Color = BlipColor.Cyan;
+                blipCreated = true;
+            }
+            else if (!lcpdfrPlayer.IsInPoliceDepartment)
+            {
+                if (ChiefOfPoliceRoomBlip != null) ChiefOfPoliceRoomBlip.Delete(); else return;
+                if (PartnerRoomBlip != null) PartnerRoomBlip.Delete(); else return;
+                blipCreated = false;
+            }
+        }
+        #endregion
+
+        /// <summary>
         /// Called every tick to process all plugin logic.
         /// </summary>
         public override void Process()
@@ -204,7 +326,33 @@ namespace NooseMod_LCPDFR
             SummarizeOverallStats();
             ChiefOfPolice_DifficultySelection();
             InitializeReset();
+            //ShowStatsFormWhileUsingPoliceComputer();
+            NetworkGame_RequestBackupHandler();
         }
+
+        /*
+        /// <summary>
+        /// Displays Stats Form while using the police computer.
+        /// </summary>
+        private void ShowStatsFormWhileUsingPoliceComputer()
+        {
+            if (lcpdfrPlayer.Ped.IsInVehicle())
+            {
+                if (lcpdfrPlayer.Ped.CurrentVehicle.Model.ModelInfo.ModelFlags == LCPD_First_Response.Engine.Scripting.Entities.EModelFlags.IsCopCar)
+                {
+                    if (Functions.IsKeyDown(SettingsFile.Open("LCPDFR\\LCPDFR.ini").GetValueKey("PoliceComputer", "Keybindings", Keys.E)) |
+                        Functions.IsControllerKeyDown((GamepadButtonFlags)Enum.Parse(typeof(GamepadButtonFlags), SettingsFile.Open("LCPDFR\\LCPDFR.ini").GetValueString("PoliceComputer", "KeybindingsController", "LeftShoulder"), true)))
+                        try
+                        {
+                            Functions.SetExternalTextInputActive(true);
+                            statsForm.DrawToBitmap(new System.Drawing.Bitmap(Game.Resolution.Width, Game.Resolution.Height), new System.Drawing.Rectangle(150, 200, Game.Resolution.Width, Game.Resolution.Height));
+                            statsForm.Show();
+                        }
+                        catch (Exception ex) { Log.Error("Form cannot be initialized: " + ex, this); }
+                }
+            }
+        }
+         // */
 
         /// <summary>
         /// Called when the plugin is being disposed, e.g. because an unhandled exception occured in Process. Free all resources here!
@@ -271,17 +419,17 @@ namespace NooseMod_LCPDFR
         }
 
         /// <summary>
-        /// Gets a string representation of this event. Call Base to get the string.
+        /// Returns this plugin name when called.
         /// </summary>
-        /// <returns>A string that represents current object</returns>
+        /// <returns>Plugin name.</returns>
         public override string ToString()
         {
-            return base.ToString();
+            return "NooseMod";
         }
 
         #region LCPDFR External Procedures
         /// <summary>
-        /// Processes difficulty change when inside the Chief of Police's Office Room
+        /// Processes difficulty change when inside the Chief of Police's Office Room.
         /// </summary>
         private void ChiefOfPolice_DifficultySelection()
         {
@@ -290,22 +438,23 @@ namespace NooseMod_LCPDFR
 
             //Blip selectDifficultyBlip = Blip.AddBlip(ChiefOfPoliceRoom);
             bool isHardcoreModeActive = controller.HardcoreModeIsActive();
-            int waitTime = 10000;
-            if (lcpdfrPlayer.IsInPoliceDepartment && lcpdfrPlayer.Ped.Position.DistanceTo(ChiefOfPoliceRoom) < 1f && !isHardcoreModeActive
-                && lcpdfrPlayer.Skin.Model == new Model("M_Y_SWAT") || lcpdfrPlayer.Skin.Model == new Model("M_Y_NHELIPILOT"))
+            int waitTime = 10000; // 10 seconds refresh
+            if (isHardcoreModeActive == false)
+                if (lcpdfrPlayer.IsInPoliceDepartment && lcpdfrPlayer.Ped.Position.DistanceTo(ChiefOfPoliceRoom) < 1f &&
+                (lcpdfrPlayer.Skin.Model == new Model("M_Y_SWAT") | lcpdfrPlayer.Skin.Model == new Model("M_Y_NHELIPILOT")))
             {
-                // Play an animation
                 this.isSelectingDifficulty = true;
                 int[] tempDiff = { 1, 2, 3 };
                 int keyPress = 0;
                 //AnimationSet difficultyPlayAnim = new AnimationSet("cellphone");
                 Functions.PrintHelp("Use left and right arrows to select a difficulty. When done, press ~KEY_ACCEPT_CALLOUT~ to confirm. Otherwise press ~KEY_ARREST_CALL_TRANSPORTER~ to quit.");
+                TaskSequence mytask = new TaskSequence();
+                mytask.AddTask.StandStill(-1);
+                mytask.AddTask.UseMobilePhone(-1);
+                mytask.Perform(lcpdfrPlayer.Ped);
+                //lcpdfrPlayer.CanControlCharacter = false;
                 while (this.isSelectingDifficulty)
                 {
-                    //lcpdfrPlayer.Ped.Animation.Play(difficultyPlayAnim, "", 1.0f);
-                    //lcpdfrPlayer.Ped.Animation.WaitUntilFinished(difficultyPlayAnim, "");
-                    lcpdfrPlayer.Ped.Task.UseMobilePhone(-1);
-                    lcpdfrPlayer.Ped.Task.StandStill(-1);
                     if (Functions.IsKeyDown(Keys.Left))
                     {
                         keyPress--;
@@ -317,171 +466,255 @@ namespace NooseMod_LCPDFR
                         if (keyPress > 2) { keyPress = 0; }
                     }
                     if (keyPress == 0)
-                    { Game.DisplayText("Difficulty: Easy"); }
+                    { Game.DisplayText("Difficulty: Easy", 1000); }
                     else if (keyPress == 1)
-                    { Game.DisplayText("Difficulty: Medium"); }
+                    { Game.DisplayText("Difficulty: Medium", 1000); }
                     else if (keyPress == 2)
-                    { Game.DisplayText("Difficulty: Hard"); }
+                    { Game.DisplayText("Difficulty: Hard", 1000); }
 
                     if (Functions.IsKeyDown(SettingsFile.Open("LCPDFR\\LCPDFR.ini").GetValueKey("AcceptCallout", "Keybindings", Keys.Y)))
                     {
                         SettingsIni.SetValue("Difficulty", "GlobalSettings", tempDiff[keyPress]);
                         SettingsIni.Save();
-                        Functions.PrintText("Difficulty has been set",5000);
-                        //lcpdfrPlayer.Ped.Task.ClearAllImmediately();
-                        lcpdfrPlayer.Ped.Task.PutAwayMobilePhone();
+                        Functions.PrintText("Difficulty has been set", 5000);
+                        lcpdfrPlayer.CanControlCharacter = true;
                         lcpdfrPlayer.Ped.Task.ClearAll();
                         this.isSelectingDifficulty = false;
+                        Function.Call("TRIGGER_MISSION_COMPLETE_AUDIO", new Parameter[] { 1 });
                         Game.WaitInCurrentScript(waitTime);
                     }
                     else if (Functions.IsKeyDown(SettingsFile.Open("LCPDFR\\LCPDFR.ini").GetValueKey("ArrestCallTransporter", "Keybindings", Keys.N)))
                     {
-                        //lcpdfrPlayer.Ped.Task.ClearAllImmediately();
-                        lcpdfrPlayer.Ped.Task.PutAwayMobilePhone();
+                        //lcpdfrPlayer.CanControlCharacter = true;
                         lcpdfrPlayer.Ped.Task.ClearAll();
                         this.isSelectingDifficulty = false;
                         Game.WaitInCurrentScript(waitTime);
+                    }
+                    Game.WaitInCurrentScript(0); // yield
+                }
+            }
+        }
+
+        /// <summary>
+        /// Allows the host of the plugin requests backup when or when not in a mission.
+        /// </summary>
+        private void NetworkGame_RequestBackupHandler()
+        {
+            // The codes below are taken from the latest pull of LCPDFR API on GitHub (or latest download from LCPDFR website).
+            // If you are the developer feel free to have fun with this handler (or add one other handler and mod it your way).
+
+            bool isNetworkingBackupSystemActive = SettingsIni.GetValueBool("EnableNetworkingBackupSys", "GlobalSettings", false);
+            // Send RequestBackup message in network game.
+            if (Functions.IsKeyDown(SettingsIni.GetValueKey("RequestBackupInNetworkKeybind", "GlobalSettings", Keys.Back))
+                & isNetworkingBackupSystemActive == true)
+            {
+                if (Networking.IsInSession && Networking.IsConnected)
+                {
+                    if (Networking.IsHost)
+                    {
+                        Vector3 position = LPlayer.LocalPlayer.Ped.Position;
+
+                        // Tell client we need backup.
+                        DynamicData dynamicData = new DynamicData(Networking.GetServerInstance());
+                        dynamicData.Write(position);
+                        Networking.GetServerInstance().Send(this.ToString(), NetworkMessages.RequestBackup, dynamicData);
                     }
                 }
             }
         }
 
         /// <summary>
-        /// Processes the ability to rearm player when driving an Enforcer
+        /// Gets the Enforcer Armory State for allowing player to rearm his weapons
+        /// </summary>
+        /// <returns>True if within 3 "single" values (<see cref="System.Single"/>) and the vehicle is a "pure" Enforcer, otherwise false</returns>
+        private bool GetEnforcerArmoryState()
+        {
+            LVehicle closestVehicle = LVehicle.FromGTAVehicle(World.GetClosestVehicle(lcpdfrPlayer.Ped.Position, 3f));
+            return closestVehicle != null && closestVehicle.Model.ModelInfo.Hash == Enforcer;
+        }
+
+        /// <summary>
+        /// Processes the ability to rearm player when driving an Enforcer.
         /// </summary>
         private void ProcessEnforcerAbility()
         {
-            if (lcpdfrPlayer.Ped.IsInVehicle() && lcpdfrPlayer.IsOnDuty && lcpdfrPlayer.Skin.Model == new Model("M_Y_SWAT") || lcpdfrPlayer.Skin.Model == new Model("M_Y_NHELIPILOT"))
+            if (lcpdfrPlayer.IsOnDuty && GetEnforcerArmoryState() &&
+                (lcpdfrPlayer.Skin.Model == new Model("M_Y_SWAT") | lcpdfrPlayer.Skin.Model == new Model("M_Y_NHELIPILOT")))
             {
-                bool usePrefixPistolModel = SettingsIni.GetValueBool("UsePrefixPistolModel", "WorldSettings", false);
-                if (lcpdfrPlayer.Ped.IsSittingInVehicle() || lcpdfrPlayer.Ped.IsInVehicle())
+                // Fixed the state where you cannot get back into the Enforcer - used the customized method of the original NooseMod
+                if (!lcpdfrPlayer.Ped.IsInVehicle() && GetEnforcerArmoryState())
                 {
-                    currentVeh = lcpdfrPlayer.Ped.CurrentVehicle;
-                    UInt64 hash = currentVeh.Model.ModelInfo.Hash;
-                    do
+                    Functions.PrintHelp("Press ~KEY_OPEN_TRUNK~ to rearm your weapon or ~INPUT_ENTER~ to get in the Enforcer.");
+                    if (Functions.IsKeyDown(SettingsFile.Open("LCPDFR\\LCPDFR.ini").GetValueKey("OpenTrunk", "Keybindings", Keys.E)))
                     {
-                        if (hash == Enforcer)
-                        {
-                            Weapon PrimaryWeapon1, PrimaryWeapon2, PrefixPistol = new Weapon();
-                            int PrimaryAmmo1, PrimaryAmmo2, PistolAmmo;
-                            switch (SettingsIni.GetValueString("PrimaryWeapon1", "WorldSettings")) // case-sensitive
-                            {
-                                // Default (when no value is present), then cases
-                                // Handles SMG, Rifles, Sniper Rifles, and Heavy Weapons
-                                    // Runs on Episodic Check
-                                default: PrimaryWeapon1 = Weapon.SMG_MP5; break;
-                                case "Rifle_AK47": PrimaryWeapon1 = Weapon.Rifle_AK47; break;
-                                case "Rifle_M4": PrimaryWeapon1 = Weapon.Rifle_M4; break;
-                                case "TBOGT_AdvancedMG": if (currentGameEpPlatform == GameEpisode.TBOGT)
-                                    {
-                                        PrimaryWeapon1 = Weapon.TBOGT_AdvancedMG; // M249
-                                    }
-                                    else { PrimaryWeapon1 = Weapon.Rifle_M4; } break;
-                                case "TBOGT_AdvancedSniper": if (currentGameEpPlatform == GameEpisode.TBOGT)
-                                    {
-                                        PrimaryWeapon1 = Weapon.TBOGT_AdvancedSniper; // DSR-1
-                                    }
-                                    else { PrimaryWeapon1 = Weapon.SniperRifle_M40A1; } break;
-                                case "SMG_MP5": PrimaryWeapon1 = Weapon.SMG_MP5; break;
-                                case "SniperRifle_Basic": PrimaryWeapon1 = Weapon.SniperRifle_Basic; break;
-                                case "SniperRifle_M40A1": PrimaryWeapon1 = Weapon.SniperRifle_M40A1; break;
-                                case "Heavy_RocketLauncher": PrimaryWeapon1 = Weapon.Heavy_RocketLauncher; break;
-                                case "TLAD_GrenadeLauncher": if (currentGameEpPlatform == GameEpisode.TLAD)
-                                    {
-                                        PrimaryWeapon1 = Weapon.TLAD_GrenadeLauncher; // HK69A1 40mm
-                                    }
-                                    else { PrimaryWeapon1 = Weapon.None; } break;
-                                case "TBOGT_GrenadeLauncher": if (currentGameEpPlatform == GameEpisode.TBOGT)
-                                    {
-                                        PrimaryWeapon1 = Weapon.TBOGT_GrenadeLauncher; // HK69A1 40mm
-                                    }
-                                    else { PrimaryWeapon1 = Weapon.None; } break;
-                                case "TBOGT_AssaultSMG": if (currentGameEpPlatform == GameEpisode.TBOGT)
-                                    {
-                                        PrimaryWeapon1 = Weapon.TBOGT_AssaultSMG; // P90
-                                    }
-                                    else { PrimaryWeapon1 = Weapon.SMG_MP5; } break;
-                            }
-                            switch (SettingsIni.GetValueString("PrimaryWeapon2", "WorldSettings")) // case-sensitive
-                            {
-                                default: PrimaryWeapon2 = Weapon.Shotgun_Baretta; break;
-                                case "Shotgun_Baretta": PrimaryWeapon2 = Weapon.Shotgun_Baretta; break;
-                                case "Shotgun_Basic": PrimaryWeapon2 = Weapon.Shotgun_Basic; break;
-                                case "TBOGT_ExplosiveShotgun": if (currentGameEpPlatform == GameEpisode.TBOGT)
-                                    {
-                                        PrimaryWeapon2 = Weapon.TBOGT_ExplosiveShotgun; // AA-12 12ga Frag-12
-                                    }
-                                    else { PrimaryWeapon2 = Weapon.Shotgun_Baretta; } break;
-                                case "TBOGT_NormalShotgun": if (currentGameEpPlatform == GameEpisode.TBOGT)
-                                    {
-                                        PrimaryWeapon2 = Weapon.TBOGT_NormalShotgun; // AA-12 Shotgun
-                                    }
-                                    else { PrimaryWeapon2 = Weapon.Shotgun_Baretta; } break;
-                                case "TLAD_AssaultShotgun": if (currentGameEpPlatform == GameEpisode.TLAD)
-                                    {
-                                        PrimaryWeapon2 = Weapon.TLAD_AssaultShotgun; // Striker
-                                    }
-                                    else { PrimaryWeapon2 = Weapon.Shotgun_Baretta; } break;
-                                case "TLAD_SawedOffShotgun": if (currentGameEpPlatform == GameEpisode.TLAD)
-                                    {
-                                        PrimaryWeapon2 = Weapon.TLAD_SawedOffShotgun; // Lupara?
-                                    }
-                                    else { PrimaryWeapon2 = Weapon.Shotgun_Basic; } break;
-                            }
-                            PrimaryAmmo1 = SettingsIni.GetValueInteger("PrimaryAmmo1", "WorldSettings", 30);
-                            PrimaryAmmo2 = SettingsIni.GetValueInteger("PrimaryAmmo2", "WorldSettings", 8);
-                            PistolAmmo = SettingsIni.GetValueInteger("PistolAmmo", "WorldSettings", 15);
+                        TaskSequence mytask = new TaskSequence();
+                        mytask.AddTask.StandStill(-1);
+                        mytask.AddTask.PlayAnimation(new AnimationSet("playidles_std"), "gun_cock_weapon", 8f, AnimationFlags.Unknown05);
+                        mytask.Perform(lcpdfrPlayer.Ped);
+                        Functions.PrintText("Rearming...", 5000);
+                        Game.WaitInCurrentScript(3000);
 
-                            // Checks if the prefix pistol model value returned true
-                            if (usePrefixPistolModel)
-                            {
-                                switch (SettingsIni.GetValueString("PrefixPistolModel", "WorldSettings"))
-                                {
-                                    default: PrefixPistol = Weapon.Handgun_Glock; break;
-                                    case "Handgun_Glock": PrefixPistol = Weapon.Handgun_Glock; break;
-                                    case "Handgun_DesertEagle": PrefixPistol = Weapon.Handgun_DesertEagle; break;
-                                    case "TLAD_Automatic9mm": if (currentGameEpPlatform == GameEpisode.TLAD)
-                                        {
-                                            PrefixPistol = Weapon.TLAD_Automatic9mm; // CZ75-Auto
-                                        }
-                                        else { PrefixPistol = Weapon.Handgun_Glock; } break;
-                                    case "TBOGT_Pistol44": if (currentGameEpPlatform == GameEpisode.TBOGT)
-                                        {
-                                            PrefixPistol = Weapon.TBOGT_Pistol44; // SA Auto .44
-                                        }
-                                        else { PrefixPistol = Weapon.Handgun_DesertEagle; } break;
-                                }
-                            }
+                        Rearm();
 
-                            // First primary depend on the weapon slot
-                            lcpdfrPlayer.Ped.Weapons.FromType(PrimaryWeapon1).Ammo += PrimaryAmmo1;
-
-                            // Second primary have their own slot: Shotguns
-                            lcpdfrPlayer.Ped.Weapons.FromType(PrimaryWeapon2).Ammo += PrimaryAmmo2;
-
-                            // Secondary is pistol
-                            if (usePrefixPistolModel)
-                            {
-                                lcpdfrPlayer.Ped.Weapons.FromType(PrefixPistol).Ammo += PistolAmmo;
-                            }
-                            else
-                            {
-                                lcpdfrPlayer.Ped.Weapons.AnyHandgun.Ammo += PistolAmmo;
-                            }
-
-                            // Free Grenades! (Molotovs or other throwables are replaced)
-                            lcpdfrPlayer.Ped.Weapons.FromType(Weapon.Thrown_Grenade).Ammo += 3;
-
-                            // Refresh every 0.5 second
-                            Game.WaitInCurrentScript(500);
-                        }
-                        else break;
-                    } while (lcpdfrPlayer.Ped.IsInVehicle(currentVeh));
+                        Game.WaitInCurrentScript(1500);
+                        lcpdfrPlayer.Ped.Task.ClearAllImmediately();
+                        Game.WaitInCurrentScript(500);
+                        Functions.PrintText("Complete", 5000);
+                        Function.Call("TRIGGER_MISSION_COMPLETE_AUDIO", new Parameter[] { 27 });
+                        Game.WaitInCurrentScript(10000);
+                    }
                 }
-                else return;
             }
             // If return is active, this method will loop around, making others not be processed
             //else return;
+        }
+
+        private void Rearm()
+        {
+            bool usePrefixPistolModel = SettingsIni.GetValueBool("UsePrefixPistolModel", "WorldSettings", false);
+
+            Weapon PrimaryWeapon1, PrimaryWeapon2, PrefixPistol = new Weapon();
+            int PrimaryAmmo1, PrimaryAmmo2, PistolAmmo;
+
+            try
+            {
+                switch ((Weapon)Enum.Parse(typeof(Weapon), SettingsIni.GetValueString("PrimaryWeapon1", "WorldSettings"), true))
+                {
+                    // Default (when no value is present), then cases
+                    // Handles SMG, Rifles, Sniper Rifles, and Heavy Weapons
+                    // Runs on Episodic Check
+                    default: PrimaryWeapon1 = Weapon.SMG_MP5; break;
+                    case Weapon.Rifle_AK47: PrimaryWeapon1 = Weapon.Rifle_AK47; break;
+                    case Weapon.Rifle_M4: PrimaryWeapon1 = Weapon.Rifle_M4; break;
+                    case Weapon.TBOGT_AdvancedMG:
+                        if (currentGameEpPlatform == GameEpisode.TBOGT)
+                            PrimaryWeapon1 = Weapon.TBOGT_AdvancedMG; // M249
+                        else PrimaryWeapon1 = Weapon.Rifle_M4;
+                        break;
+                    case Weapon.TBOGT_AdvancedSniper:
+                        if (currentGameEpPlatform == GameEpisode.TBOGT)
+                            PrimaryWeapon1 = Weapon.TBOGT_AdvancedSniper; // DSR-1
+                        else PrimaryWeapon1 = Weapon.SniperRifle_M40A1;
+                        break;
+                    case Weapon.SMG_MP5: PrimaryWeapon1 = Weapon.SMG_MP5; break;
+                    case Weapon.SniperRifle_Basic: PrimaryWeapon1 = Weapon.SniperRifle_Basic; break;
+                    case Weapon.SniperRifle_M40A1: PrimaryWeapon1 = Weapon.SniperRifle_M40A1; break;
+                    case Weapon.Heavy_RocketLauncher: PrimaryWeapon1 = Weapon.Heavy_RocketLauncher; break;
+                    case Weapon.TBOGT_AssaultSMG:
+                        if (currentGameEpPlatform == GameEpisode.TBOGT)
+                            PrimaryWeapon1 = Weapon.TBOGT_AssaultSMG; // P90
+                        else PrimaryWeapon1 = Weapon.SMG_MP5;
+                        break;
+                    case (Weapon)21: // HK69A1 40mm
+                        if (currentGameEpPlatform == GameEpisode.TLAD)
+                            PrimaryWeapon1 = Weapon.TLAD_GrenadeLauncher;
+                        else if (currentGameEpPlatform == GameEpisode.TBOGT)
+                            PrimaryWeapon1 = Weapon.TBOGT_GrenadeLauncher;
+                        else PrimaryWeapon1 = Weapon.Heavy_RocketLauncher; // Defaulted to the Rocket Launcher if you are using vanilla WeaponInfo
+                        break;
+                }
+                switch ((Weapon)Enum.Parse(typeof(Weapon), SettingsIni.GetValueString("PrimaryWeapon2", "WorldSettings"), true))
+                {
+                    default: PrimaryWeapon2 = Weapon.Shotgun_Baretta; break;
+                    case Weapon.Shotgun_Baretta: PrimaryWeapon2 = Weapon.Shotgun_Baretta; break;
+                    case Weapon.Shotgun_Basic: PrimaryWeapon2 = Weapon.Shotgun_Basic; break;
+                    case Weapon.TBOGT_ExplosiveShotgun:
+                        if (currentGameEpPlatform == GameEpisode.TBOGT)
+                            PrimaryWeapon2 = Weapon.TBOGT_ExplosiveShotgun; // AA-12 12ga Frag-12
+                        else PrimaryWeapon2 = Weapon.Shotgun_Baretta;
+                        break;
+                    case Weapon.TBOGT_NormalShotgun:
+                        if (currentGameEpPlatform == GameEpisode.TBOGT)
+                            PrimaryWeapon2 = Weapon.TBOGT_NormalShotgun; // AA-12 Shotgun
+                        else PrimaryWeapon2 = Weapon.Shotgun_Baretta;
+                        break;
+                    case Weapon.TLAD_AssaultShotgun:
+                        if (currentGameEpPlatform == GameEpisode.TLAD)
+                            PrimaryWeapon2 = Weapon.TLAD_AssaultShotgun; // Striker
+                        else PrimaryWeapon2 = Weapon.Shotgun_Baretta;
+                        break;
+                    case Weapon.TLAD_SawedOffShotgun:
+                        if (currentGameEpPlatform == GameEpisode.TLAD)
+                            PrimaryWeapon2 = Weapon.TLAD_SawedOffShotgun; // Lupara?
+                        else PrimaryWeapon2 = Weapon.Shotgun_Basic;
+                        break;
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Error on getting weapon data: " + ex, this);
+                return;
+            }
+
+            try
+            {
+                // Get ammo counts (if empty will be defaulted to original clip size based on My Realistic Weapon Mod v5)
+                // First Primary Weapon will be categorized for its weapon type (Heavy Weapons will have ammo set to 3, regardless of settings made)
+                if (PrimaryWeapon1 == Weapon.Heavy_RocketLauncher || PrimaryWeapon1 == (Weapon)21)
+                    PrimaryAmmo1 = 3;
+                else PrimaryAmmo1 = SettingsIni.GetValueInteger("PrimaryAmmo1", "WorldSettings", 30);
+                PrimaryAmmo2 = SettingsIni.GetValueInteger("PrimaryAmmo2", "WorldSettings", 8);
+                PistolAmmo = SettingsIni.GetValueInteger("PistolAmmo", "WorldSettings", 15);
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Error on getting weapon ammunition data: " + ex, this);
+                return;
+            }
+
+            // Checks if the prefix pistol model value returned true
+            if (usePrefixPistolModel) try
+                {
+                    switch ((Weapon)Enum.Parse(typeof(Weapon), SettingsIni.GetValueString("PrefixPistolModel", "WorldSettings"), true))
+                    {
+                        default: PrefixPistol = Weapon.Handgun_Glock; break;
+                        case Weapon.Handgun_Glock: PrefixPistol = Weapon.Handgun_Glock; break;
+                        case Weapon.Handgun_DesertEagle: PrefixPistol = Weapon.Handgun_DesertEagle; break;
+                        case Weapon.TLAD_Automatic9mm:
+                            if (currentGameEpPlatform == GameEpisode.TLAD)
+                                PrefixPistol = Weapon.TLAD_Automatic9mm; // CZ75-Auto
+                            else PrefixPistol = Weapon.Handgun_Glock;
+                            break;
+                        case Weapon.TBOGT_Pistol44:
+                            if (currentGameEpPlatform == GameEpisode.TBOGT)
+                                PrefixPistol = Weapon.TBOGT_Pistol44; // SA Auto .44
+                            else PrefixPistol = Weapon.Handgun_DesertEagle;
+                            break;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log.Error("Error on getting weapon data: " + ex, this);
+                    return;
+                }
+
+            try
+            {
+                // First primary depend on the weapon slot
+                lcpdfrPlayer.Ped.Weapons.FromType(PrimaryWeapon1).Ammo += PrimaryAmmo1;
+
+                // Second primary have their own slot: Shotguns
+                lcpdfrPlayer.Ped.Weapons.FromType(PrimaryWeapon2).Ammo += PrimaryAmmo2;
+
+                // Secondary is pistol
+                if (usePrefixPistolModel)
+                    lcpdfrPlayer.Ped.Weapons.FromType(PrefixPistol).Ammo += PistolAmmo;
+                else if (lcpdfrPlayer.Ped.Weapons.inSlot(WeaponSlot.Handgun) == null)
+                    lcpdfrPlayer.Ped.Weapons.Glock.Ammo = PistolAmmo;
+                else
+                    lcpdfrPlayer.Ped.Weapons.inSlot(WeaponSlot.Handgun).Ammo += PistolAmmo;
+
+                // Free Grenades! (If you have other throwables, it'll be added)
+                if (lcpdfrPlayer.Ped.Weapons.inSlot(WeaponSlot.Thrown) == null)
+                    lcpdfrPlayer.Ped.Weapons.Grenades.Ammo = 3;
+                else
+                    lcpdfrPlayer.Ped.Weapons.inSlot(WeaponSlot.Thrown).Ammo += 3;
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Cannot apply weapons to player: " + ex, this);
+                Functions.PrintText("Cannot apply weapons to player, check LCPDFR.log for errors", 3000);
+            }
         }
 
         /// <summary>
@@ -503,31 +736,31 @@ namespace NooseMod_LCPDFR
             else return;
 
             // Get Values
-            if (overallstatsdt.Rows.Count != 0 && overallstatsdt.IsInitialized && lcpdfrPlayer.IsOnDuty && missionstatsdt.IsInitialized
-                && lcpdfrPlayer.Skin.Model == new Model("M_Y_SWAT") || lcpdfrPlayer.Skin.Model == new Model("M_Y_NHELIPILOT"))
-            try
-            {
-                for (int i = 1; i <= missionstatsdt.Rows.Count; i++)
+            if (overallstatsdt.Rows.Count != 0 & overallstatsdt.IsInitialized & lcpdfrPlayer.IsOnDuty & missionstatsdt.IsInitialized
+                & (lcpdfrPlayer.Skin.Model == new Model("M_Y_SWAT") | lcpdfrPlayer.Skin.Model == new Model("M_Y_NHELIPILOT")))
+                try
                 {
-                    tempVar1 = tempVar1 + missionstatsdt.FindByMission_Number(i).Suspects_Killed;
-                    tempVar2 = tempVar2 + missionstatsdt.FindByMission_Number(i).Suspects_Arrested;
-                    tempVar3 = tempVar3 + missionstatsdt.FindByMission_Number(i).Hostages_Killed;
-                    tempVar4 = tempVar4 + missionstatsdt.FindByMission_Number(i).Hostages_Rescued;
-                    tempVar5 = tempVar5 + missionstatsdt.FindByMission_Number(i).Officer_Casualties;
-                    tempVar6 = tempVar6 + missionstatsdt.FindByMission_Number(i).Squad_Casualties;
-                    //tempVar7 = tempVar7 + missionstatsdt.FindByMission_Number(i).Income;
+                    for (int i = 1; i <= missionstatsdt.Rows.Count; i++)
+                    {
+                        tempVar1 = tempVar1 + missionstatsdt.FindByMission_Number(i).Suspects_Killed;
+                        tempVar2 = tempVar2 + missionstatsdt.FindByMission_Number(i).Suspects_Arrested;
+                        tempVar3 = tempVar3 + missionstatsdt.FindByMission_Number(i).Hostages_Killed;
+                        tempVar4 = tempVar4 + missionstatsdt.FindByMission_Number(i).Hostages_Rescued;
+                        tempVar5 = tempVar5 + missionstatsdt.FindByMission_Number(i).Officer_Casualties;
+                        tempVar6 = tempVar6 + missionstatsdt.FindByMission_Number(i).Squad_Casualties;
+                        //tempVar7 = tempVar7 + missionstatsdt.FindByMission_Number(i).Income;
+                    }
+                    // Write the Summary
+                    overallstatsdt.FindBySession(loginNumbers).Suspects_Killed = tempVar1;
+                    overallstatsdt.FindBySession(loginNumbers).Suspects_Arrested = tempVar2;
+                    overallstatsdt.FindBySession(loginNumbers).Hostages_Killed = tempVar3;
+                    overallstatsdt.FindBySession(loginNumbers).Hostages_Rescued = tempVar4;
+                    overallstatsdt.FindBySession(loginNumbers).Officer_Casualties = tempVar5;
+                    overallstatsdt.FindBySession(loginNumbers).Squad_Casualties = tempVar6;
+                    overallstatsdt.AcceptChanges();
+                    overallstatsadp.Update(overallstatsdt);
                 }
-                // Write the Summary
-                overallstatsdt.FindBySession(loginNumbers).Suspects_Killed = tempVar1;
-                overallstatsdt.FindBySession(loginNumbers).Suspects_Arrested = tempVar2;
-                overallstatsdt.FindBySession(loginNumbers).Hostages_Killed = tempVar3;
-                overallstatsdt.FindBySession(loginNumbers).Hostages_Rescued = tempVar4;
-                overallstatsdt.FindBySession(loginNumbers).Officer_Casualties = tempVar5;
-                overallstatsdt.FindBySession(loginNumbers).Squad_Casualties = tempVar6;
-                overallstatsdt.AcceptChanges();
-                overallstatsadp.Update(overallstatsdt);
-            }
-            catch (Exception ex) { Log.Error("Error writing statistics to database: " + ex, this); overallstatsdt.RejectChanges(); }
+                catch (Exception ex) { Log.Error("Error writing statistics to database: " + ex, this); overallstatsdt.RejectChanges(); }
         }
 
         /// <summary>
@@ -539,23 +772,29 @@ namespace NooseMod_LCPDFR
             int timeToResetAgain = 10000;
             // If player is near a terminal, show message
 
-            if (lcpdfrPlayer.IsInPoliceDepartment && lcpdfrPlayer.Ped.Position.DistanceTo(PartnerRoom) < 1f)
+            if (lcpdfrPlayer.IsInPoliceDepartment & lcpdfrPlayer.Ped.Position.DistanceTo(PartnerRoom) < 1f)
             {
                 Functions.PrintHelp("To reset the save progress, press ~KEY_ACCEPT_CALLOUT~ to confirm while standing.");
                 Functions.PrintText("Reset NooseMod save progress?", 5000);
-                if (Functions.IsKeyDown(SettingsFile.Open("LCPDFR\\LCPDFR.ini").GetValueKey("AcceptCallout", "Keybindings", Keys.Y)))
-                {
-                    // Reset status
-                    StreamWriter streamWriter = new StreamWriter("NooseMod\\save.txt");
-                    streamWriter.WriteLine(value.ToString());
-                    streamWriter.Close();
+                if (Functions.IsKeyDown(SettingsFile.Open("LCPDFR\\LCPDFR.ini").GetValueKey("AcceptCallout", "Keybindings", Keys.Y))) try
+                    {
+                        // Reset status
+                        StreamWriter streamWriter = new StreamWriter("LCPDFR\\Plugins\\NooseMod\\save.txt");
+                        streamWriter.WriteLine(value.ToString());
+                        streamWriter.Close();
 
-                    // Notify user
-                    Functions.PrintText("NooseMod save progress has been reset.", 5000);
-                    Log.Info("Progress has been reset", this);
-                    Function.Call("TRIGGER_MISSION_COMPLETE_AUDIO", new Parameter[] { 1 });
-                    Game.WaitInCurrentScript(timeToResetAgain);
-                }
+                        // Notify user
+                        Functions.PrintText("NooseMod save progress has been reset.", 5000);
+                        Log.Info("Progress has been reset", this);
+                        Function.Call("TRIGGER_MISSION_COMPLETE_AUDIO", new Parameter[] { 1 });
+                        Game.WaitInCurrentScript(timeToResetAgain);
+                    }
+                    catch (Exception ex) 
+                    {
+                        Log.Error("Unable to read or write save.txt: " + ex, this);
+                        Functions.PrintText("Unable to read or write save.txt, check LCPDFR.log for errors", 5000);
+                        Game.WaitInCurrentScript(timeToResetAgain);
+                    }
                 else Game.WaitInCurrentScript(300); // hold each 0.3 second
             }
         }
@@ -581,7 +820,6 @@ namespace NooseMod_LCPDFR
             // Close connection
             missionstatsadp.Connection.Close();
         }
-        // TODO: input console command for NooseMod showing GPL 3.0 license
         #endregion
     }
 }

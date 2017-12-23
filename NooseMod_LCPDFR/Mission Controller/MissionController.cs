@@ -60,26 +60,36 @@ namespace NooseMod_LCPDFR.Mission_Controller
         public Weapon AssignTerroristWeapon(int number)
         {
             Weapon selectedWeap = new Weapon();
-            switch (number)
+            try
             {
+                switch (number)
+                {
                     // Change your fav Terrorist weapons here.
                     // 1 to 4 are GTA IV weapons
-                case 1: selectedWeap = Weapon.Rifle_AK47; break; // AK rifle (seen in CS:GO)
-                case 2: selectedWeap = Weapon.Shotgun_Basic; break; // Stub/Sawed-off Shotgun (seen in CS:GO)
-                case 3: selectedWeap = Weapon.Handgun_Glock; break; // Glock handgun (police issue)
-                case 4: selectedWeap = Weapon.SMG_Uzi; break; // Uzi SMG
+                    case 1: selectedWeap = Weapon.Rifle_AK47; break; // AK rifle (seen in CS:GO)
+                    case 2: selectedWeap = Weapon.Shotgun_Basic; break; // Stub/Sawed-off Shotgun (seen in CS:GO)
+                    case 3: selectedWeap = Weapon.Handgun_Glock; break; // Glock handgun (police issue)
+                    case 4: selectedWeap = Weapon.SMG_Uzi; break; // Uzi SMG
 
                     // 5 and 6 are TBoGT weapons (called when the Game Episode is TBoGT)
-                case 5: selectedWeap = Weapon.TBOGT_AdvancedMG; break; // MG, if running TBoGT
-                case 6: selectedWeap = Weapon.TBOGT_Pistol44; break; // .44A Handgun, if running TBoGT
+                    case 5: selectedWeap = Weapon.TBOGT_AdvancedMG; break; // MG, if running TBoGT
+                    case 6: selectedWeap = Weapon.TBOGT_Pistol44; break; // .44A Handgun, if running TBoGT
 
                     // 7 and 8 are TLAD weapons (called when the Game Episode is TLAD)
-                case 7: selectedWeap = Weapon.TLAD_Automatic9mm; break; // CZ75 (seen in CS:GO)
-                case 8: selectedWeap = Weapon.TLAD_AssaultShotgun; break; // Striker shotgun
+                    case 7: selectedWeap = Weapon.TLAD_Automatic9mm; break; // CZ75 (seen in CS:GO)
+                    case 8: selectedWeap = Weapon.TLAD_AssaultShotgun; break; // Striker shotgun
 
                     // 9 is throwable - you can change between Molotov and Grenade here
-                case 9: selectedWeap = Weapon.Thrown_Grenade; break; // Hand Grenades
-                default: throw new Exception("No weapons are assigned");
+                    case 9: selectedWeap = Weapon.Thrown_Grenade; break; // Hand Grenades
+                    default: throw new Exception("No weapons are assigned");
+                }
+            }
+            catch (Exception ex)
+            {
+                // When the error caught, default it to no weapons (unarmed)
+                Log.Error("Error getting weapon data: " + ex, this.ToString());
+                Log.Error("Defaulting Weapon to Unarmed...", this.ToString());
+                selectedWeap = Weapon.Unarmed;
             }
             return selectedWeap;
         }
@@ -92,26 +102,36 @@ namespace NooseMod_LCPDFR.Mission_Controller
         /// <returns><see cref="GTA.Weapon"/></returns>
         public Weapon AssignCounterTerroristWeapon(int number)
         {
-            Weapon selectedweap = new Weapon();
-            switch (number)
+            Weapon selectedWeap = new Weapon();
+            try
             {
-                // Change your fav Counter-Terrorist weapons here.
-                // 1 to 5 are GTA IV weapons (also called when the Game Episode is TLAD,
+                switch (number)
+                {
+                    // Change your fav Counter-Terrorist weapons here.
+                    // 1 to 5 are GTA IV weapons (also called when the Game Episode is TLAD,
                     // because TLAD weapons are Terrorist-specific weapons)
-                case 1: selectedweap = Weapon.Handgun_Glock; break;
-                case 2: selectedweap = Weapon.Handgun_DesertEagle; break;
-                case 3: selectedweap = Weapon.Rifle_M4; break;
-                case 4: selectedweap = Weapon.SMG_MP5; break;
-                case 5: selectedweap = Weapon.SniperRifle_Basic; break;
+                    case 1: selectedWeap = Weapon.Handgun_Glock; break;
+                    case 2: selectedWeap = Weapon.Handgun_DesertEagle; break;
+                    case 3: selectedWeap = Weapon.Rifle_M4; break;
+                    case 4: selectedWeap = Weapon.SMG_MP5; break;
+                    case 5: selectedWeap = Weapon.SniperRifle_Basic; break;
 
-                // 6 to 9 are TBoGT weapons (called when the Game Episode is TBoGT)
-                case 6: selectedweap = Weapon.TBOGT_AdvancedMG; break;
-                case 7: selectedweap = Weapon.TBOGT_AssaultSMG; break;
-                case 8: selectedweap = Weapon.TBOGT_NormalShotgun; break;
-                case 9: selectedweap = Weapon.TBOGT_AdvancedSniper; break;
-                default: throw new Exception("No weapons are assigned");
+                    // 6 to 9 are TBoGT weapons (called when the Game Episode is TBoGT)
+                    case 6: selectedWeap = Weapon.TBOGT_AdvancedMG; break;
+                    case 7: selectedWeap = Weapon.TBOGT_AssaultSMG; break;
+                    case 8: selectedWeap = Weapon.TBOGT_NormalShotgun; break;
+                    case 9: selectedWeap = Weapon.TBOGT_AdvancedSniper; break;
+                    default: throw new Exception("No weapons are assigned");
+                }
             }
-            return selectedweap;
+            catch (Exception ex)
+            {
+                // When the error caught, default it to no weapons (unarmed)
+                Log.Error("Error getting weapon data: " + ex, this.ToString());
+                Log.Error("Defaulting Weapon to Unarmed...", this.ToString());
+                selectedWeap = Weapon.Unarmed;
+            }
+            return selectedWeap;
         }
 
         /// <summary>
@@ -140,6 +160,33 @@ namespace NooseMod_LCPDFR.Mission_Controller
             {
                 // Read the text files
                 // Directory is relative to the game path where ScriptHookDotNet and LCPDFR are installed
+                string[] files = Directory.GetFiles("LCPDFR\\Plugins\\NooseMod\\Missions");
+                int numOfFiles = 0; // Careful, this may include the template file
+                do
+                {
+                    string file = files[numOfFiles];
+                    loadedMissions.Add(new Mission(file));
+                    numOfFiles++;
+                }
+                while (numOfFiles < files.Length);
+                Log.Info("NooseMod successfully loaded " + this.loadedMissions.Count.ToString() + " missions into the list.", this.ToString());
+            }
+
+            // When an exception occured, log the error message
+            // Error may cause script to get ruined, because no missions are loaded
+            catch (Exception ex) { Log.Error("Load failed: " + ex, this.ToString()); }
+        }
+
+        /// <summary>
+        /// Gather mission data for use with the callout and register it into the list.
+        /// NOTE: This method records no logs.
+        /// </summary>
+        public void GetMissionData_NoLog()
+        {
+            try
+            {
+                // Read the text files
+                // Directory is relative to the game path where ScriptHookDotNet and LCPDFR are installed
                 string[] files = Directory.GetFiles("LCPDFR\\Plugins\\NooseMod\\Missions"); int numOfFiles = 0; // Careful, this may include the template file
                 do
                 {
@@ -147,7 +194,6 @@ namespace NooseMod_LCPDFR.Mission_Controller
                     loadedMissions.Add(new Mission(file));
                     numOfFiles++;
                 } while (numOfFiles < files.Length);
-                Log.Info("NooseMod successfully loaded " + this.loadedMissions.Count.ToString() + " missions into the list.", this.ToString());
             }
 
             // When an exception occured, log the error message
@@ -194,8 +240,7 @@ namespace NooseMod_LCPDFR.Mission_Controller
             // Though I personally hate it, there is no other way except accessing the LCPDFR Config File
             // through the SHDN as LCPDFR itself do not have a function to determine whether Hardcore Mode is active.
             // Directory is relative to the game path where ScriptHookDotNet and LCPDFR are installed
-            bool Mode = SettingsFile.Open("LCPDFR\\LCPDFR.ini").GetValueBool("Enabled", "Hardcore", false);
-            return Mode;
+            return SettingsFile.Open("LCPDFR\\LCPDFR.ini").GetValueBool("Enabled", "Hardcore", false);
         }
 
         /// <summary>
@@ -205,30 +250,32 @@ namespace NooseMod_LCPDFR.Mission_Controller
         public string LoadRandomRegisteredPeds()
         {
             string[] ModelName = SettingsFile.Open("LCPDFR\\Plugins\\NooseMod.ini").
-                GetValueString("CriminalModel", "WorldSettings", "M_M_GUNNUT_01").
+                GetValueString("CriminalModel", "WorldSettings", "M_M_GUNNUT_01;").
                 Split(new char[] { ';' });
-            int lastPointer = ModelName.Length;
+            int lastPointer = ModelName.Length - 1;
             foreach (string text in ModelName)
             {
-                if (text == null)
+                if (text == null || text == "")
                 {
-                    Log.Warning("LoadRandomRegisteredPeds: Invalid entry", this.ToString());
+                    Log.Warning("LoadRandomRegisteredPeds(): Invalid entry", this.ToString());
                 }
             }
             int randNum = 0;
 
             // Check if the length of the text is not null
             // When null, load on the pointer that is not null
-                if (ModelName.Length != 0 && ModelName[lastPointer] != null)
-                {
-                    randNum = Common.GetRandomValue(0, ModelName.Length+1);
-                }
-                else if (ModelName.Length != 0 && ModelName[lastPointer] == null // null identifier
-                    || ModelName[lastPointer] == "") // if no text (empty spaces may return an error)
-                {
-                    randNum = Common.GetRandomValue(0, ModelName.Length);
-                }
-                else { randNum = 0; }
+            if (ModelName.Length != 0 && ModelName[lastPointer] != null && ModelName[lastPointer] != "")
+            {
+                randNum = Common.GetRandomValue(0, ModelName.Length);
+            }
+            else if (ModelName.Length != 0 && ModelName[lastPointer] == null // null identifier
+                || ModelName[lastPointer] == "") // if no text (empty spaces may return an error)
+            {
+                int tempVar = ModelName.Length - 1;
+                if (tempVar == 0) randNum = 0;
+                else randNum = Common.GetRandomValue(0, tempVar);
+            }
+            else { randNum = 0; }
 
             return ModelName[randNum];
         }
@@ -239,16 +286,17 @@ namespace NooseMod_LCPDFR.Mission_Controller
         /// <returns>Model name of a criminal</returns>
         public string LoadAODBikerGangPeds()
         {
+            // Note: Biker Gangs can affiliate with terrorists, so a likely chance a biker is accompanied by one or more terrorists.
             string[] bikerModels_AOD;
             if (Game.CurrentEpisode == GameEpisode.TLAD)
             {
                 // When playing LCPDFR in TLAD platform, this will load standard and unique AOD Biker models.
                 // You can try adding the females here (if you think ladies can afford a gunfight), see TLAD peds.ide for model names.
                 bikerModels_AOD = new string[] { "M_M_GBIK_LO_03", "M_Y_GBIK02_LO_02", "M_Y_GBIK_HI_01", "M_Y_GBIK_HI_02", "M_Y_GANGELS_01",
-                    "M_Y_GANGELS_02", "M_Y_GANGELS_03", "M_Y_GANGELS_04", "M_Y_GANGELS_05", "M_Y_GANGELS_06" };
+                    "M_Y_GANGELS_02", "M_Y_GANGELS_03", "M_Y_GANGELS_04", "M_Y_GANGELS_05", "M_Y_GANGELS_06", "M_M_GUNNUT_01" };
             }
-                // Otherwise standard AOD Biker models will be used. TBoGT do not have unique biker model.
-            else { bikerModels_AOD = new string[] { "M_M_GBIK_LO_03", "M_Y_GBIK02_LO_02", "M_Y_GBIK_HI_01", "M_Y_GBIK_HI_02" }; }
+            // Otherwise standard AOD Biker models will be used. TBoGT do not have unique biker model.
+            else { bikerModels_AOD = new string[] { "M_M_GBIK_LO_03", "M_Y_GBIK02_LO_02", "M_Y_GBIK_HI_01", "M_Y_GBIK_HI_02", "M_M_GUNNUT_01" }; }
             return Common.GetRandomCollectionValue<string>(bikerModels_AOD);
         }
 
@@ -258,6 +306,7 @@ namespace NooseMod_LCPDFR.Mission_Controller
         /// <returns>Model name of a criminal</returns>
         public string LoadTLMCBikerGangPeds()
         {
+            // Note: Biker Gangs can affiliate with terrorists, so a likely chance a biker is accompanied by one or more terrorists.
             string[] bikerModels_TLMC;
             if (Game.CurrentEpisode == GameEpisode.TLAD)
             {
@@ -267,10 +316,10 @@ namespace NooseMod_LCPDFR.Mission_Controller
                 bikerModels_TLMC = new string[] { "M_Y_GBIK_LO_01", "M_Y_GBIK_LO_02", "M_Y_GLOST_01", "M_Y_GLOST_02",
                     "M_Y_GLOST_03", "M_Y_GLOST_04", "M_Y_GLOST_05", "M_Y_GLOST_06", "LOSTBUDDY_01", "LOSTBUDDY_02", "LOSTBUDDY_03",
                     "LOSTBUDDY_04", "LOSTBUDDY_05", "LOSTBUDDY_06", "LOSTBUDDY_07", "LOSTBUDDY_08", "LOSTBUDDY_09", "LOSTBUDDY_10",
-                    "LOSTBUDDY_11", "LOSTBUDDY_12", "LOSTBUDDY_13" };
+                    "LOSTBUDDY_11", "LOSTBUDDY_12", "LOSTBUDDY_13", "M_M_GUNNUT_01" };
             }
             // Otherwise standard TLMC models will be used. TBoGT do not have unique biker model.
-            else { bikerModels_TLMC = new string[] { "M_Y_GBIK_LO_01", "M_Y_GBIK_LO_02" }; }
+            else { bikerModels_TLMC = new string[] { "M_Y_GBIK_LO_01", "M_Y_GBIK_LO_02", "M_M_GUNNUT_01" }; }
             return Common.GetRandomCollectionValue<string>(bikerModels_TLMC);
         }
 

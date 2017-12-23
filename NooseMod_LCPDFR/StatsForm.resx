@@ -117,43 +117,22 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="CALLOUT_NOOSEMOD_FIGHT_SUSPECTS" xml:space="preserve">
-    <value>Eliminate all ~r~threats~w~ and watch for the hostages. Good luck.</value>
-  </data>
-  <data name="CALLOUT_NOOSEMOD_FLEEING_TERRORISTS" xml:space="preserve">
-    <value>Remaining terrorists are fleeing. Don't let them escape!</value>
-  </data>
-  <data name="CALLOUT_NOOSEMOD_HOSTAGES_BEING_EXECUTED" xml:space="preserve">
-    <value>Terrorists are executing hostages! Hurry up!</value>
-  </data>
-  <data name="CALLOUT_NOOSEMOD_PLAYER_IN_POS" xml:space="preserve">
-    <value>Dispatch, I'm in position with the officers at {0}.</value>
-  </data>
-  <data name="CALLOUT_NOOSEMOD_POLICE_BACKUP_REQUIRED" xml:space="preserve">
-    <value>NOOSE is requesting police backup for fleeing terrorists at {0}.</value>
-  </data>
-  <data name="CALLOUT_NOOSEMOD_STANDBY" xml:space="preserve">
-    <value>Wait for the second team to arrive. Do not charge in to the target.</value>
-  </data>
-  <data name="CALLOUT_NOOSEMOD_TERRORIST_ACTIVITY" xml:space="preserve">
-    <value>Available NOOSE units respond to the terrorist activity in {0}.</value>
-  </data>
-  <data name="CALLOUT_NOOSEMOD_TERRORIST_ACTIVITY_2" xml:space="preserve">
-    <value>Officer is requesting NOOSE presence for a criminal in a gun spree in {0}.</value>
-  </data>
-  <data name="CALLOUT_NOOSEMOD_TERRORIST_ACTIVITY_3" xml:space="preserve">
-    <value>SOS Message received, relaying orders: an officer is requesting NOOSE presence in {0}.</value>
-  </data>
-  <data name="CALLOUT_NOOSEMOD_TERRORIST_ACTIVITY_4" xml:space="preserve">
-    <value>We have a possible terrorist activity in {0}, NOOSE presence is required.</value>
-  </data>
-  <data name="CALLOUT_NOOSEMOD_TERRORIST_ACTIVITY_5" xml:space="preserve">
-    <value>A Biker Gang has wrecked the peace in {0}, NOOSE presence is required.</value>
-  </data>
-  <data name="CALLOUT_NOOSEMOD_TERRORIST_ACTIVITY_6" xml:space="preserve">
-    <value>SOS Message received, relaying orders: Assault and Battery confirmed at {0}, available NOOSE units, please respond.</value>
-  </data>
-  <data name="CALLOUT_NOOSEMOD_TERRORIST_ACTIVITY_7" xml:space="preserve">
-    <value>Civilians are reporting criminals taking hostages. Police has been dispatched. Any available NOOSE units are required at {0} for assist.</value>
-  </data>
+  <metadata name="statsDataSet.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+    <value>17, 17</value>
+  </metadata>
+  <metadata name="missionStatsBindingSource.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+    <value>172, 17</value>
+  </metadata>
+  <metadata name="missionStatsTableAdapter.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+    <value>446, 17</value>
+  </metadata>
+  <metadata name="tableAdapterManager.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+    <value>711, 17</value>
+  </metadata>
+  <metadata name="overallStatsBindingSource.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+    <value>17, 65</value>
+  </metadata>
+  <metadata name="overallStatsTableAdapter.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+    <value>283, 65</value>
+  </metadata>
 </root>

@@ -35,7 +35,7 @@ namespace NooseMod_LCPDFR
     /// Changes Partner's Relationship when you are assigned as a NOOSE/SWAT member
     /// </summary>
     [PluginInfo("NooseMod.RelationshipSwitcher", false, true)]
-    public class RelationshipSwitcher:Plugin
+    public class RelationshipSwitcher : Plugin
     {
         #region Initialization
         /// <summary>
@@ -68,68 +68,75 @@ namespace NooseMod_LCPDFR
         public override void Process()
         {
             // Detects if player is on duty and is using specified model used in NooseMod
-            if (LPlayer.LocalPlayer.IsOnDuty && LPlayer.LocalPlayer.Skin.Model == new Model("M_Y_SWAT") || LPlayer.LocalPlayer.Skin.Model == new Model("M_Y_NHELIPILOT"))
-            {
-                // Get Partners
-                LHandle partnerManager = Functions.GetCurrentPartner();
-                partners = Functions.GetPartnerPeds(partnerManager);
-                //Log.Debug("Partner Handle: " + partnerManager.ToString(), this);
-
-                // Make sure it is not null when processed
-                if (partners != null) foreach (LPed myped in partners)
+            if (LPlayer.LocalPlayer.IsOnDuty)
+                if (LPlayer.LocalPlayer.Skin.Model == new Model("M_Y_SWAT") || LPlayer.LocalPlayer.Skin.Model == new Model("M_Y_NHELIPILOT")) try
                     {
-                        if (myped.Exists() && Record[myped.GetHashCode()] == false)
-                        {
-                            // Store the record so it won't be processed twice or more
-                            Record[myped.GetHashCode()] = true;
+                        // Get Partners
+                        LHandle partnerManager = Functions.GetCurrentPartner();
+                        partners = Functions.GetPartnerPeds(partnerManager);
+                        //Log.Debug("Partner Handle: " + partnerManager.ToString(), this);
 
-                            // Change Relationship!
-                            myped.ChangeRelationship(RelationshipGroup.Player, Relationship.Companion);
-                            myped.ChangeRelationship(RelationshipGroup.Cop, Relationship.Companion);
-                            myped.ChangeRelationship(RelationshipGroup.Civillian_Male, Relationship.Like);
-                            myped.ChangeRelationship(RelationshipGroup.Civillian_Female, Relationship.Like);
-                            myped.ChangeRelationship(RelationshipGroup.Criminal, Relationship.Hate);
-                            myped.ChangeRelationship(RelationshipGroup.Fireman, Relationship.Like);
-                            myped.ChangeRelationship(RelationshipGroup.Medic, Relationship.Respect);
-                            myped.ChangeRelationship(RelationshipGroup.Dealer, Relationship.Dislike);
-                            myped.ChangeRelationship(RelationshipGroup.Gang_AfricanAmerican, Relationship.Hate);
-                            myped.ChangeRelationship(RelationshipGroup.Gang_Albanian, Relationship.Hate);
-                            myped.ChangeRelationship(RelationshipGroup.Gang_Biker1, Relationship.Hate);
-                            myped.ChangeRelationship(RelationshipGroup.Gang_Biker2, Relationship.Hate);
-                            myped.ChangeRelationship(RelationshipGroup.Gang_ChineseJapanese, Relationship.Hate);
-                            myped.ChangeRelationship(RelationshipGroup.Gang_Irish, Relationship.Hate);
-                            myped.ChangeRelationship(RelationshipGroup.Gang_Italian, Relationship.Hate);
-                            myped.ChangeRelationship(RelationshipGroup.Gang_Jamaican, Relationship.Hate);
-                            myped.ChangeRelationship(RelationshipGroup.Gang_Korean, Relationship.Hate);
-                            myped.ChangeRelationship(RelationshipGroup.Gang_PuertoRican, Relationship.Hate);
-                            myped.ChangeRelationship(RelationshipGroup.Gang_Russian1, Relationship.Hate);
-                            myped.ChangeRelationship(RelationshipGroup.Gang_Russian2, Relationship.Hate);
-                            myped.ChangeRelationship(RelationshipGroup.Special, Relationship.Hate);
-                            myped.ChangeRelationship(RelationshipGroup.Prostitute, Relationship.Neutral);
-
-                            // Make your partner can switch weapons from time to time (like ContactAction ASI plugin)
-                            myped.CanSwitchWeapons = true;
-
-                            // Allow drive-by when being shot at so they can return fire
-                            myped.WillDoDrivebys = true;
-
-                            // Should the partners have a chance to comply like suspects?
-                            // TODO: Remove me
-                            try
+                        // Make sure it is not null when processed
+                        if (partners != null) foreach (LPed myped in partners)
                             {
-                                myped.ComplianceChance = random.Next(100);
-                            }
-                            catch (ArgumentOutOfRangeException)
-                            {
-                                Log.Error("Value is out of range, defaulting...", this);
-                                myped.ComplianceChance = 50;
-                            }
+                                if (myped.Exists() && Record[myped.GetHashCode()] == false)
+                                {
+                                    // Store the record so it won't be processed twice or more
+                                    Record[myped.GetHashCode()] = true;
 
-                            Log.Info("Partner's custom relationship set!", this);
-                        }
+                                    // Change Relationship!
+                                    myped.ChangeRelationship(RelationshipGroup.Player, Relationship.Companion);
+                                    myped.ChangeRelationship(RelationshipGroup.Cop, Relationship.Companion);
+                                    myped.ChangeRelationship(RelationshipGroup.Civillian_Male, Relationship.Like);
+                                    myped.ChangeRelationship(RelationshipGroup.Civillian_Female, Relationship.Like);
+                                    myped.ChangeRelationship(RelationshipGroup.Criminal, Relationship.Hate);
+                                    myped.ChangeRelationship(RelationshipGroup.Fireman, Relationship.Like);
+                                    myped.ChangeRelationship(RelationshipGroup.Medic, Relationship.Respect);
+                                    myped.ChangeRelationship(RelationshipGroup.Dealer, Relationship.Dislike);
+                                    myped.ChangeRelationship(RelationshipGroup.Gang_AfricanAmerican, Relationship.Hate);
+                                    myped.ChangeRelationship(RelationshipGroup.Gang_Albanian, Relationship.Hate);
+                                    myped.ChangeRelationship(RelationshipGroup.Gang_Biker1, Relationship.Hate);
+                                    myped.ChangeRelationship(RelationshipGroup.Gang_Biker2, Relationship.Hate);
+                                    myped.ChangeRelationship(RelationshipGroup.Gang_ChineseJapanese, Relationship.Hate);
+                                    myped.ChangeRelationship(RelationshipGroup.Gang_Irish, Relationship.Hate);
+                                    myped.ChangeRelationship(RelationshipGroup.Gang_Italian, Relationship.Hate);
+                                    myped.ChangeRelationship(RelationshipGroup.Gang_Jamaican, Relationship.Hate);
+                                    myped.ChangeRelationship(RelationshipGroup.Gang_Korean, Relationship.Hate);
+                                    myped.ChangeRelationship(RelationshipGroup.Gang_PuertoRican, Relationship.Hate);
+                                    myped.ChangeRelationship(RelationshipGroup.Gang_Russian1, Relationship.Hate);
+                                    myped.ChangeRelationship(RelationshipGroup.Gang_Russian2, Relationship.Hate);
+                                    myped.ChangeRelationship(RelationshipGroup.Special, Relationship.Hate);
+                                    myped.ChangeRelationship(RelationshipGroup.Prostitute, Relationship.Neutral);
+
+                                    // Make your partner can switch weapons from time to time (like ContactAction ASI plugin)
+                                    myped.CanSwitchWeapons = true;
+
+                                    // Allow drive-by when being shot at so they can return fire
+                                    myped.WillDoDrivebys = true;
+
+                                    // Should the partners have a chance to comply like suspects?
+                                    // TODO: Remove me
+                                    try
+                                    {
+                                        myped.ComplianceChance = random.Next(100);
+                                    }
+                                    catch (ArgumentOutOfRangeException)
+                                    {
+                                        Log.Error("Value is out of range, defaulting...", this);
+                                        myped.ComplianceChance = 50;
+                                    }
+
+                                    Log.Info("Partner's custom relationship set!", this);
+                                }
+                            }
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Error("Failed setting up relationship data with partner: " + ex, this);
+                        Functions.PrintHelp("Relationship Switcher encountered an error, check LCPDFR.log for details.");
                     }
                 else return;
-            }
+            else return;
         }
 
         /// <summary>
@@ -137,7 +144,6 @@ namespace NooseMod_LCPDFR
         /// </summary>
         public override void Finally()
         {
-            throw new NotImplementedException();
         }
     }
 }

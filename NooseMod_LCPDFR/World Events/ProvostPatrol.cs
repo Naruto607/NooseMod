@@ -44,17 +44,20 @@ namespace NooseMod_LCPDFR.World_Events
         /// </summary>
         private LPed[] SWATMembers;
 
-        // Using CModelInfo - look for model name and its hash here: https://www.gtamodding.com/wiki/List_of_models_hashes
         /// <summary>
         /// Model Information of NOOSE/SWAT trooper using LCPDFR basis
         /// </summary>
-        private CModel SWATTrooper = new CModel(new CModelInfo("M_Y_SWAT", 3290204350, EModelFlags.IsNoose));
+        private CModel SWATTrooper = new CModel(new Model("M_Y_SWAT"));
 
-        // Add a regular police car or Enforcer here if you like a diverse variety
+        //private CModel SWATTrooper = new CModel(new CModelInfo("M_Y_SWAT", 3290204350, EModelFlags.IsNoose));
+        //private CModel SWATTrooper = new CModel(3290204350);
+        // Using CModelInfo - look for model name and its hash here: https://www.gtamodding.com/wiki/List_of_models_hashes
+
         /// <summary>
         /// List of vehicle models used by NOOSE
         /// </summary>
         private string[] NooseVehModels = { "NOOSE", "POLPATRIOT" };
+        // Add a regular police car or Enforcer here if you like a diverse variety (although I prefer the NOOSE cars, but hey, try Military Patriot if you like)
 
         /// <summary>
         /// The vehicle
@@ -148,7 +151,7 @@ namespace NooseMod_LCPDFR.World_Events
             NooseVeh.AllowSirenWithoutDriver = true;
 
             // Grab current vehicle data from the first spawned NOOSE/SWAT member and assign it to cruise drive.
-            if (NooseVeh.Exists() && NooseVeh.IsDriveable && SWATMembers[0].IsInVehicle(NooseVeh))
+            if (NooseVeh != null && NooseVeh.Exists() && NooseVeh.IsDriveable && SWATMembers[0].IsInVehicle(NooseVeh))
             {
                 SWATMembers[0].Task.CruiseWithVehicle(NooseVeh, 40.0f, true);
             }
@@ -175,6 +178,7 @@ namespace NooseMod_LCPDFR.World_Events
 
         /// <summary>
         /// Called when a world event should be disposed.
+        /// This is also called when <see cref="WorldEvent.CanBeDisposedNow"/> returns false.
         /// </summary>
         public override void End()
         {
@@ -208,14 +212,22 @@ namespace NooseMod_LCPDFR.World_Events
             base.PedLeftScript(ped);
 
             // Since they are law enforcers, they can only be left when died
-            for (int i = 0; i <= SWATMembers.Length; i++)
+            try
             {
-                if (ped == SWATMembers[i])
+                for (int i = 0; i <= SWATMembers.Length; i++)
                 {
-                    SWATMembers[i].Task.ClearAll();
-                    SWATMembers[i].NoLongerNeeded();
+                    if (ped == SWATMembers[i])
+                    {
+                        SWATMembers[i].Task.ClearAll();
+                        SWATMembers[i].NoLongerNeeded();
+                    }
+                    //NooseVeh.NoLongerNeeded();
                 }
-                //NooseVeh.NoLongerNeeded();
+            }
+            catch (Exception ex)
+            {
+                // Script continues to play even though the error is logged
+                Log.Error("CRITICAL ERROR: Error accessing array list or trouble with peds in list: " + ex, this);
             }
         }
 
@@ -233,7 +245,7 @@ namespace NooseMod_LCPDFR.World_Events
             bool AllSet = new Boolean();
 
             // NOOSE Personnel can only spawn when within 300 (meters?) range.
-            if (Common.GetRandomCollectionValue<Vector3>(possibleNooseLocations).DistanceTo(position) < 300f)
+            if (position.DistanceTo(Common.GetRandomCollectionValue<Vector3>(possibleNooseLocations)) < 300f)
                 AllSet = true;
             else AllSet = false;
 

@@ -167,5 +167,14 @@ namespace NooseMod_LCPDFR.Properties {
                 return ResourceManager.GetString("CALLOUT_NOOSEMOD_TERRORIST_ACTIVITY_6", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Civilians are reporting criminals taking hostages. Police has been dispatched. Any available NOOSE units are required at {0} for assist..
+        /// </summary>
+        public static string CALLOUT_NOOSEMOD_TERRORIST_ACTIVITY_7 {
+            get {
+                return ResourceManager.GetString("CALLOUT_NOOSEMOD_TERRORIST_ACTIVITY_7", resourceCulture);
+            }
+        }
     }
 }

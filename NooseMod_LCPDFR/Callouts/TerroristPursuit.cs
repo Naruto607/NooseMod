@@ -17,17 +17,20 @@
 
 //    Greetings to Sam @ LCPDFR.com for this wonderful API feature.
 
+using LCPD_First_Response.Engine.Scripting.Entities;
+using NooseMod_LCPDFR.Properties;
+using System;
+
 namespace NooseMod_LCPDFR.Callouts
 {
     #region Uses
+    using System.Linq;
+
     using GTA;
+
     using LCPD_First_Response.Engine;
-    using LCPD_First_Response.Engine.Scripting.Entities;
     using LCPD_First_Response.LCPDFR.API;
     using LCPD_First_Response.LCPDFR.Callouts;
-    using NooseMod_LCPDFR.Properties;
-    using System;
-    using System.Linq;
     #endregion
 
     /// <summary>
@@ -44,13 +47,18 @@ namespace NooseMod_LCPDFR.Callouts
         /// </summary>
         //private string[] criminalModels = { "M_Y_THIEF", "M_Y_THIEF", "M_Y_GRUS_LO_01", "M_Y_GRU2_LO_01", "M_Y_GMAF_LO_01", "M_Y_GMAF_HI_01", "M_Y_GTRI_LO_01", "M_Y_GTRI_LO_02", "M_Y_GALB_LO_01", "M_Y_GALB_LO_02" };
         private string[] criminalModels = SettingsFile.Open("LCPDFR\\Plugins\\NooseMod.ini").
-            GetValueString("CriminalModel", "WorldSettings", "M_M_GUNNUT_01").
+            GetValueString("CriminalModel", "WorldSettings", "M_M_GUNNUT_01;").
             Split(new char[] { ';' });
 
         /// <summary>
         /// Vehicle models that can be used.
         /// </summary>
         private string[] vehicleModels = { "NSTOCKADE", "NOOSE", "POLICE", "POLICE2", "SPEEDO", "TAXI", "LANDSTALKER", "ORACLE", "TAXI2", "CAVALCADE", "AMBULANCE" };
+
+        /// <summary>
+        /// Vehicle models that can be used.
+        /// </summary>
+        private string[] fastNooseVehicles = { "NOOSE", "POLICE", "POLICE2", "POLPATRIOT" };
 
         /// <summary>
         /// The pursuit.
@@ -72,6 +80,9 @@ namespace NooseMod_LCPDFR.Callouts
         /// </summary>
         private Vector3 spawnPosition;
 
+        #region Beta Player Cash Gain
+        // As far as I concern, only for Arrested ones can get a cash, not with the killed ones
+
         /// <summary>
         /// How much money gained for killed suspects (terrorists)
         /// </summary>
@@ -81,6 +92,7 @@ namespace NooseMod_LCPDFR.Callouts
         /// How much money gained for suspects (terrorists) that are arrested
         /// </summary>
         internal int cashForArrestedTerrors = 500; // Cops participated only get 2/3 of the normal
+        #endregion
 
         /// <summary>
         /// Initializes a new instance of the <see cref="TerroristPursuit"/> class.
@@ -129,8 +141,7 @@ namespace NooseMod_LCPDFR.Callouts
         /// </returns>
         public override bool OnCalloutAccepted()
         {
-            base.OnCalloutAccepted();
-            bool pursuitReady = true;
+            bool pursuitReady = base.OnCalloutAccepted();
 
             try
             {
@@ -144,6 +155,7 @@ namespace NooseMod_LCPDFR.Callouts
                     // Ensure vehicle is freed on end
                     Functions.AddToScriptDeletionList(this.vehicle, this);
                     this.vehicle.PlaceOnNextStreetProperly();
+                    this.vehicle.EngineRunning = this.vehicle.Exists();
 
                     int peds = Common.GetRandomValue(1, 4);
 
@@ -163,11 +175,14 @@ namespace NooseMod_LCPDFR.Callouts
                             else
                             {
                                 this.terrorists[i].WarpIntoVehicle(this.vehicle, VehicleSeat.AnyPassengerSeat);
+                                this.terrorists[i].WillDoDrivebys = true;
                             }
 
                             // Make ignore all events and give specified weapons
                             this.terrorists[i].BlockPermanentEvents = true;
                             this.terrorists[i].Task.AlwaysKeepTask = true;
+                            this.terrorists[i].EquipWeapon();
+
                             this.terrorists[i].Weapons.RemoveAll();
                             bool acquireRPG = Common.GetRandomBool(0, 7, 1);
                             if (acquireRPG)
@@ -192,21 +207,22 @@ namespace NooseMod_LCPDFR.Callouts
                             Functions.AddPedToPursuit(this.pursuit, this.terrorists[i]);
                         }
                     }
+                    this.vehicle.Speed = (float)Common.GetRandomValue(20, 45);
 
-                    // Create Police
-                    LVehicle copCar = new LVehicle(World.GetNextPositionOnStreet(this.vehicle.Position), "NOOSE");
+                    // Create NOOSE personnel in a fast NOOSE car
+                    LVehicle copCar = new LVehicle(World.GetNextPositionOnStreet(this.vehicle.Position), Common.GetRandomCollectionValue<string>(this.fastNooseVehicles));
                     if (copCar.Exists())
                     {
                         Functions.AddToScriptDeletionList(copCar, this);
                         copCar.PlaceOnNextStreetProperly();
 
-                        // Using CModelInfo - look for model name and its hash here: https://www.gtamodding.com/wiki/List_of_models_hashes
-                        LPed NooseDriver = copCar.CreatePedOnSeat(VehicleSeat.Driver, new CModel(new CModelInfo("M_Y_SWAT", 3290204350, EModelFlags.IsNoose)), RelationshipGroup.Cop);
-                        LPed NooseMember1 = copCar.CreatePedOnSeat(VehicleSeat.RightFront, new CModel(new CModelInfo("M_Y_SWAT", 3290204350, EModelFlags.IsNoose)), RelationshipGroup.Cop);
-                        LPed NooseMember2 = copCar.CreatePedOnSeat(VehicleSeat.LeftRear, new CModel(new CModelInfo("M_Y_SWAT", 3290204350, EModelFlags.IsNoose)), RelationshipGroup.Cop);
-                        LPed NooseMember3 = copCar.CreatePedOnSeat(VehicleSeat.RightRear, new CModel(new CModelInfo("M_Y_SWAT", 3290204350, EModelFlags.IsNoose)), RelationshipGroup.Cop);
-
-                        LPed[] Nooses = { NooseDriver, NooseMember1, NooseMember2, NooseMember3 };
+                        LPed[] Nooses =
+                        {
+                            copCar.CreatePedOnSeat(VehicleSeat.Driver, new CModel(new Model("M_Y_SWAT")), RelationshipGroup.Cop),
+                            copCar.CreatePedOnSeat(VehicleSeat.RightFront, new CModel(new Model("M_Y_SWAT")),RelationshipGroup.Cop),
+                            copCar.CreatePedOnSeat(VehicleSeat.LeftRear, new CModel(new Model("M_Y_SWAT")),RelationshipGroup.Cop),
+                            copCar.CreatePedOnSeat(VehicleSeat.RightRear, new CModel(new Model("M_Y_SWAT")),RelationshipGroup.Cop)
+                        };
 
                         for (int i = 0; i < Nooses.Length; i++)
                         {
@@ -214,18 +230,21 @@ namespace NooseMod_LCPDFR.Callouts
                             {
                                 Functions.AddToScriptDeletionList(Nooses[i], this);
                                 copCar.SirenActive = true;
-                                //copDriver.SayAmbientSpeech("PULL_OVER_WARNING");
                             }
                         }
+                        copCar.Speed = (float)Common.GetRandomValue(10, 45);
+                        copCar.EngineRunning = copCar.Exists();
                     }
 
                     // Since we want other cops to join, set as called in already and also active it for player
                     Functions.SetPursuitCalledIn(this.pursuit, true);
                     Functions.SetPursuitIsActiveForPlayer(this.pursuit, true);
+                    Functions.SetPursuitForceSuspectsToFight(this.pursuit, true);
 
                     // Show message to the player
                     Functions.PrintText(Functions.GetStringFromLanguageFile("CALLOUT_ROBBERY_CATCH_UP"), 25000);
                 }
+                pursuitReady = true;
             }
             catch (Exception ex) { Log.Error("Cannot create Pursuit instance: " + ex, this); pursuitReady = false; }
             return pursuitReady;
@@ -239,13 +258,13 @@ namespace NooseMod_LCPDFR.Callouts
             base.Process();
 
             int arrestCount = this.terrorists.Count(terrorist => terrorist.Exists() && terrorist.HasBeenArrested);
-            int killCount = this.terrorists.Count(terrorist => terrorist.Exists() && terrorist.IsDead);
+            //int killCount = this.terrorists.Count(terrorist => terrorist.Exists() && terrorist.IsDead);
 
             // Merge kill and arrest into one, then print results when done
-            if (arrestCount + killCount == this.terrorists.Length)
+            if (arrestCount /*+ killCount*/ == this.terrorists.Length)
             {
-                int totalCashGained = (cashForArrestedTerrors * arrestCount) + (cashForKilledTerrors * killCount);
-                Functions.PrintText("Excellent work! You have gained $" + totalCashGained.ToString() + " for your service.", 25000);
+                int totalCashGained = (cashForArrestedTerrors * arrestCount) /*+ (cashForKilledTerrors * killCount)*/;
+                Functions.PrintText("Excellent work! You have gained $" + totalCashGained.ToString() + " for your service.", 10000);
                 LPlayer.LocalPlayer.Money += totalCashGained;
                 SetCalloutFinished(true, true, false);
                 this.End();
@@ -254,10 +273,13 @@ namespace NooseMod_LCPDFR.Callouts
             // End this script is pursuit is no longer running, e.g. because all suspects are dead
             if (!Functions.IsPursuitStillRunning(this.pursuit))
             {
-                // You'll get nothing if cashGained is 0
+                /*// You'll get nothing if cashGained is 0
                 int cashGained = (cashForArrestedTerrors * arrestCount) + (cashForKilledTerrors * killCount);
-                Functions.PrintText("Few suspects are at large. We'll get them next time. +$" + cashGained + " for your service.", 25000);
-                LPlayer.LocalPlayer.Money += cashGained;
+                if (cashGained == 0)
+                {
+                    Functions.PrintText("Few suspects are at large. We'll get them next time. +$" + cashGained + " for your service.", 10000);
+                    LPlayer.LocalPlayer.Money += cashGained;
+                }*/
                 this.SetCalloutFinished(true, true, true);
                 this.End();
             }
