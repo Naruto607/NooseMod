@@ -20,6 +20,7 @@
 using GTA.Native;
 using NooseMod_LCPDFR.Mission_Controller;
 using NooseMod_LCPDFR.StatsDataSetTableAdapters;
+using NooseMod_LCPDFR.Global_Controller;
 using System.Data;
 using System.Data.OleDb;
 using System.IO;
@@ -66,16 +67,6 @@ namespace NooseMod_LCPDFR
         /// Current Game Episode where the LCPDFR is running from
         /// </summary>
         private GameEpisode currentGameEpPlatform = Game.CurrentEpisode;
-
-        /// <summary>
-        /// An LCPDFR Player
-        /// </summary>
-        private LPlayer lcpdfrPlayer = new LPlayer();
-
-        /// <summary>
-        /// An LCPDFR Vehicle
-        /// </summary>
-        private LVehicle currentVeh;
 
         /// <summary>
         /// NooseMod Settings File
@@ -140,7 +131,6 @@ namespace NooseMod_LCPDFR
 
             // Listen when player has joined network game
             Networking.JoinedNetworkGame += this.Networking_JoinedNetworkGame;
-            controller.GetMissionData();
 
             // Check if Stats file exists
             // Actually NooseMod folder contains Stats already, if not exists, it'll throw an error automatically
@@ -162,7 +152,7 @@ namespace NooseMod_LCPDFR
             {
                 Log.Error("Invalid Operation: " + ex, this);
             }
-            catch (Exception ex) // when other errors catched
+            catch (Exception ex) // when other errors caught
             {
                 Log.Error("Detected other error: " + ex, this);
             }
@@ -197,7 +187,7 @@ namespace NooseMod_LCPDFR
         public void Functions_OnOnDutyStateChanged(bool onDuty)
         {
             // Register callouts to LCPDFR depending on skin model
-            if (onDuty && lcpdfrPlayer.Skin.Model == new Model("M_Y_SWAT") || lcpdfrPlayer.Skin.Model == new Model("M_Y_NHELIPILOT"))
+            if (onDuty && (LPlayer.LocalPlayer.Skin.Model == new Model("M_Y_SWAT") | LPlayer.LocalPlayer.Skin.Model == new Model("M_Y_NHELIPILOT")))
             {
                 // SWAT model used: register NooseMod
                 Functions.RegisterCallout(typeof(NooseMod)); // Progressive through gameplay
@@ -220,7 +210,7 @@ namespace NooseMod_LCPDFR
                 }
                 else throw new Exception("Database is in closed state, or is in use");
             }
-            else if (onDuty && lcpdfrPlayer.Skin.Model != new Model("M_Y_SWAT") || lcpdfrPlayer.Skin.Model != new Model("M_Y_NHELIPILOT"))
+            else if (onDuty && (LPlayer.LocalPlayer.Skin.Model != new Model("M_Y_SWAT") | LPlayer.LocalPlayer.Skin.Model != new Model("M_Y_NHELIPILOT")))
             {
                 // Otherwise register TerroristPursuit callout
                 Functions.RegisterCallout(typeof(TerroristPursuit));
@@ -285,6 +275,7 @@ namespace NooseMod_LCPDFR
                     Functions.PlaySoundUsingPosition("ALL_UNITS_ALL_UNITS INS_WE_HAVE CRIM_AN_SOS FOR CRIM_AN_OFFICER_IN_NEED_OF_ASSISTANCE IN_OR_ON_POSITION", position);
                     break;
             }
+            Log.Info("Client: Server issued a backup request on coordinates " + position.ToString() + " (Area: " + area + ")", this);
 
             // Cleanup.
             DelayedCaller.Call(parameter => areaBlip.Delete(), this, 20000);
@@ -294,7 +285,7 @@ namespace NooseMod_LCPDFR
         #region Blip Controller
         private void PoliceDept_AddBlip()
         {
-            if (lcpdfrPlayer.IsInPoliceDepartment && blipCreated == false)
+            if (LPlayer.LocalPlayer.IsInPoliceDepartment && blipCreated == false)
             {
                 ChiefOfPoliceRoomBlip = Blip.AddBlipContact(ChiefOfPoliceRoom);
                 ChiefOfPoliceRoomBlip.Display = BlipDisplay.ArrowOnly;
@@ -308,10 +299,10 @@ namespace NooseMod_LCPDFR
                 PartnerRoomBlip.Color = BlipColor.Cyan;
                 blipCreated = true;
             }
-            else if (!lcpdfrPlayer.IsInPoliceDepartment)
+            else if (!LPlayer.LocalPlayer.IsInPoliceDepartment)
             {
-                if (ChiefOfPoliceRoomBlip != null) ChiefOfPoliceRoomBlip.Delete(); else return;
-                if (PartnerRoomBlip != null) PartnerRoomBlip.Delete(); else return;
+                if (ChiefOfPoliceRoomBlip != null && ChiefOfPoliceRoomBlip.Exists()) ChiefOfPoliceRoomBlip.Delete(); else return;
+                if (PartnerRoomBlip != null && PartnerRoomBlip.Exists()) PartnerRoomBlip.Delete(); else return;
                 blipCreated = false;
             }
         }
@@ -327,6 +318,7 @@ namespace NooseMod_LCPDFR
             ChiefOfPolice_DifficultySelection();
             InitializeReset();
             //ShowStatsFormWhileUsingPoliceComputer();
+            //PoliceDept_AddBlip();
             NetworkGame_RequestBackupHandler();
         }
 
@@ -336,9 +328,9 @@ namespace NooseMod_LCPDFR
         /// </summary>
         private void ShowStatsFormWhileUsingPoliceComputer()
         {
-            if (lcpdfrPlayer.Ped.IsInVehicle())
+            if (LPlayer.LocalPlayer.Ped.IsInVehicle())
             {
-                if (lcpdfrPlayer.Ped.CurrentVehicle.Model.ModelInfo.ModelFlags == LCPD_First_Response.Engine.Scripting.Entities.EModelFlags.IsCopCar)
+                if (LPlayer.LocalPlayer.Ped.CurrentVehicle.Model.ModelInfo.ModelFlags == LCPD_First_Response.Engine.Scripting.Entities.EModelFlags.IsCopCar)
                 {
                     if (Functions.IsKeyDown(SettingsFile.Open("LCPDFR\\LCPDFR.ini").GetValueKey("PoliceComputer", "Keybindings", Keys.E)) |
                         Functions.IsControllerKeyDown((GamepadButtonFlags)Enum.Parse(typeof(GamepadButtonFlags), SettingsFile.Open("LCPDFR\\LCPDFR.ini").GetValueString("PoliceComputer", "KeybindingsController", "LeftShoulder"), true)))
@@ -391,7 +383,7 @@ namespace NooseMod_LCPDFR
         {
             // Get the data from the Table Adapter
             StatsDataSet.OverallStatsDataTable overallstatsdt = overallstatsadp.GetData();
-            if (overallstatsdt.Rows.Count != 0 && overallstatsdt.IsInitialized && lcpdfrPlayer.IsOnDuty)
+            if (overallstatsdt.Rows.Count != 0 && overallstatsdt.IsInitialized && LPlayer.LocalPlayer.IsOnDuty)
             {
                 try
                 {
@@ -440,8 +432,8 @@ namespace NooseMod_LCPDFR
             bool isHardcoreModeActive = controller.HardcoreModeIsActive();
             int waitTime = 10000; // 10 seconds refresh
             if (isHardcoreModeActive == false)
-                if (lcpdfrPlayer.IsInPoliceDepartment && lcpdfrPlayer.Ped.Position.DistanceTo(ChiefOfPoliceRoom) < 1f &&
-                (lcpdfrPlayer.Skin.Model == new Model("M_Y_SWAT") | lcpdfrPlayer.Skin.Model == new Model("M_Y_NHELIPILOT")))
+                if (LPlayer.LocalPlayer.IsInPoliceDepartment && LPlayer.LocalPlayer.Ped.Position.DistanceTo(ChiefOfPoliceRoom) < 1f &&
+                (LPlayer.LocalPlayer.Skin.Model == new Model("M_Y_SWAT") | LPlayer.LocalPlayer.Skin.Model == new Model("M_Y_NHELIPILOT")))
             {
                 this.isSelectingDifficulty = true;
                 int[] tempDiff = { 1, 2, 3 };
@@ -451,8 +443,8 @@ namespace NooseMod_LCPDFR
                 TaskSequence mytask = new TaskSequence();
                 mytask.AddTask.StandStill(-1);
                 mytask.AddTask.UseMobilePhone(-1);
-                mytask.Perform(lcpdfrPlayer.Ped);
-                //lcpdfrPlayer.CanControlCharacter = false;
+                mytask.Perform(LPlayer.LocalPlayer.Ped);
+                //LPlayer.LocalPlayer.CanControlCharacter = false;
                 while (this.isSelectingDifficulty)
                 {
                     if (Functions.IsKeyDown(Keys.Left))
@@ -477,16 +469,16 @@ namespace NooseMod_LCPDFR
                         SettingsIni.SetValue("Difficulty", "GlobalSettings", tempDiff[keyPress]);
                         SettingsIni.Save();
                         Functions.PrintText("Difficulty has been set", 5000);
-                        lcpdfrPlayer.CanControlCharacter = true;
-                        lcpdfrPlayer.Ped.Task.ClearAll();
+                        LPlayer.LocalPlayer.CanControlCharacter = true;
+                        LPlayer.LocalPlayer.Ped.Task.ClearAll();
                         this.isSelectingDifficulty = false;
                         Function.Call("TRIGGER_MISSION_COMPLETE_AUDIO", new Parameter[] { 1 });
                         Game.WaitInCurrentScript(waitTime);
                     }
                     else if (Functions.IsKeyDown(SettingsFile.Open("LCPDFR\\LCPDFR.ini").GetValueKey("ArrestCallTransporter", "Keybindings", Keys.N)))
                     {
-                        //lcpdfrPlayer.CanControlCharacter = true;
-                        lcpdfrPlayer.Ped.Task.ClearAll();
+                        //LPlayer.LocalPlayer.CanControlCharacter = true;
+                        LPlayer.LocalPlayer.Ped.Task.ClearAll();
                         this.isSelectingDifficulty = false;
                         Game.WaitInCurrentScript(waitTime);
                     }
@@ -518,6 +510,7 @@ namespace NooseMod_LCPDFR
                         DynamicData dynamicData = new DynamicData(Networking.GetServerInstance());
                         dynamicData.Write(position);
                         Networking.GetServerInstance().Send(this.ToString(), NetworkMessages.RequestBackup, dynamicData);
+                        Log.Info("Server: Message sent to Client", this);
                     }
                 }
             }
@@ -529,8 +522,8 @@ namespace NooseMod_LCPDFR
         /// <returns>True if within 3 "single" values (<see cref="System.Single"/>) and the vehicle is a "pure" Enforcer, otherwise false</returns>
         private bool GetEnforcerArmoryState()
         {
-            LVehicle closestVehicle = LVehicle.FromGTAVehicle(World.GetClosestVehicle(lcpdfrPlayer.Ped.Position, 3f));
-            return closestVehicle != null && closestVehicle.Model.ModelInfo.Hash == Enforcer;
+            LVehicle closestVehicle = LVehicle.FromGTAVehicle(World.GetClosestVehicle(LPlayer.LocalPlayer.Ped.Position, 3f));
+            return ValidityCheck.isObjectValid(closestVehicle) && closestVehicle.Model.ModelInfo.Hash == Enforcer;
         }
 
         /// <summary>
@@ -538,11 +531,11 @@ namespace NooseMod_LCPDFR
         /// </summary>
         private void ProcessEnforcerAbility()
         {
-            if (lcpdfrPlayer.IsOnDuty && GetEnforcerArmoryState() &&
-                (lcpdfrPlayer.Skin.Model == new Model("M_Y_SWAT") | lcpdfrPlayer.Skin.Model == new Model("M_Y_NHELIPILOT")))
+            if (LPlayer.LocalPlayer.IsOnDuty && GetEnforcerArmoryState() &&
+                (LPlayer.LocalPlayer.Skin.Model == new Model("M_Y_SWAT") | LPlayer.LocalPlayer.Skin.Model == new Model("M_Y_NHELIPILOT")))
             {
                 // Fixed the state where you cannot get back into the Enforcer - used the customized method of the original NooseMod
-                if (!lcpdfrPlayer.Ped.IsInVehicle() && GetEnforcerArmoryState())
+                if (!LPlayer.LocalPlayer.Ped.IsInVehicle() && GetEnforcerArmoryState())
                 {
                     Functions.PrintHelp("Press ~KEY_OPEN_TRUNK~ to rearm your weapon or ~INPUT_ENTER~ to get in the Enforcer.");
                     if (Functions.IsKeyDown(SettingsFile.Open("LCPDFR\\LCPDFR.ini").GetValueKey("OpenTrunk", "Keybindings", Keys.E)))
@@ -550,14 +543,14 @@ namespace NooseMod_LCPDFR
                         TaskSequence mytask = new TaskSequence();
                         mytask.AddTask.StandStill(-1);
                         mytask.AddTask.PlayAnimation(new AnimationSet("playidles_std"), "gun_cock_weapon", 8f, AnimationFlags.Unknown05);
-                        mytask.Perform(lcpdfrPlayer.Ped);
+                        mytask.Perform(LPlayer.LocalPlayer.Ped);
                         Functions.PrintText("Rearming...", 5000);
                         Game.WaitInCurrentScript(3000);
 
                         Rearm();
 
                         Game.WaitInCurrentScript(1500);
-                        lcpdfrPlayer.Ped.Task.ClearAllImmediately();
+                        LPlayer.LocalPlayer.Ped.Task.ClearAllImmediately();
                         Game.WaitInCurrentScript(500);
                         Functions.PrintText("Complete", 5000);
                         Function.Call("TRIGGER_MISSION_COMPLETE_AUDIO", new Parameter[] { 27 });
@@ -605,7 +598,7 @@ namespace NooseMod_LCPDFR
                             PrimaryWeapon1 = Weapon.TBOGT_AssaultSMG; // P90
                         else PrimaryWeapon1 = Weapon.SMG_MP5;
                         break;
-                    case (Weapon)21: // HK69A1 40mm
+                    case (Weapon)21: // HK69A1 40mm (this is, however, assigned in Rifle class if using My Realistic WeaponInfo v5)
                         if (currentGameEpPlatform == GameEpisode.TLAD)
                             PrimaryWeapon1 = Weapon.TLAD_GrenadeLauncher;
                         else if (currentGameEpPlatform == GameEpisode.TBOGT)
@@ -691,24 +684,24 @@ namespace NooseMod_LCPDFR
             try
             {
                 // First primary depend on the weapon slot
-                lcpdfrPlayer.Ped.Weapons.FromType(PrimaryWeapon1).Ammo += PrimaryAmmo1;
+                LPlayer.LocalPlayer.Ped.Weapons.FromType(PrimaryWeapon1).Ammo += PrimaryAmmo1;
 
                 // Second primary have their own slot: Shotguns
-                lcpdfrPlayer.Ped.Weapons.FromType(PrimaryWeapon2).Ammo += PrimaryAmmo2;
+                LPlayer.LocalPlayer.Ped.Weapons.FromType(PrimaryWeapon2).Ammo += PrimaryAmmo2;
 
                 // Secondary is pistol
                 if (usePrefixPistolModel)
-                    lcpdfrPlayer.Ped.Weapons.FromType(PrefixPistol).Ammo += PistolAmmo;
-                else if (lcpdfrPlayer.Ped.Weapons.inSlot(WeaponSlot.Handgun) == null)
-                    lcpdfrPlayer.Ped.Weapons.Glock.Ammo = PistolAmmo;
+                    LPlayer.LocalPlayer.Ped.Weapons.FromType(PrefixPistol).Ammo += PistolAmmo;
+                else if (LPlayer.LocalPlayer.Ped.Weapons.inSlot(WeaponSlot.Handgun) == null)
+                    LPlayer.LocalPlayer.Ped.Weapons.Glock.Ammo = PistolAmmo;
                 else
-                    lcpdfrPlayer.Ped.Weapons.inSlot(WeaponSlot.Handgun).Ammo += PistolAmmo;
+                    LPlayer.LocalPlayer.Ped.Weapons.inSlot(WeaponSlot.Handgun).Ammo += PistolAmmo;
 
                 // Free Grenades! (If you have other throwables, it'll be added)
-                if (lcpdfrPlayer.Ped.Weapons.inSlot(WeaponSlot.Thrown) == null)
-                    lcpdfrPlayer.Ped.Weapons.Grenades.Ammo = 3;
+                if (LPlayer.LocalPlayer.Ped.Weapons.inSlot(WeaponSlot.Thrown) == null)
+                    LPlayer.LocalPlayer.Ped.Weapons.Grenades.Ammo = 3;
                 else
-                    lcpdfrPlayer.Ped.Weapons.inSlot(WeaponSlot.Thrown).Ammo += 3;
+                    LPlayer.LocalPlayer.Ped.Weapons.inSlot(WeaponSlot.Thrown).Ammo += 3;
             }
             catch (Exception ex)
             {
@@ -736,8 +729,8 @@ namespace NooseMod_LCPDFR
             else return;
 
             // Get Values
-            if (overallstatsdt.Rows.Count != 0 & overallstatsdt.IsInitialized & lcpdfrPlayer.IsOnDuty & missionstatsdt.IsInitialized
-                & (lcpdfrPlayer.Skin.Model == new Model("M_Y_SWAT") | lcpdfrPlayer.Skin.Model == new Model("M_Y_NHELIPILOT")))
+            if (overallstatsdt.Rows.Count != 0 && overallstatsdt.IsInitialized && LPlayer.LocalPlayer.IsOnDuty && missionstatsdt.IsInitialized
+                && (LPlayer.LocalPlayer.Skin.Model == new Model("M_Y_SWAT") | LPlayer.LocalPlayer.Skin.Model == new Model("M_Y_NHELIPILOT")))
                 try
                 {
                     for (int i = 1; i <= missionstatsdt.Rows.Count; i++)
@@ -772,7 +765,8 @@ namespace NooseMod_LCPDFR
             int timeToResetAgain = 10000;
             // If player is near a terminal, show message
 
-            if (lcpdfrPlayer.IsInPoliceDepartment & lcpdfrPlayer.Ped.Position.DistanceTo(PartnerRoom) < 1f)
+            if (LPlayer.LocalPlayer.IsInPoliceDepartment && LPlayer.LocalPlayer.Ped.Position.DistanceTo(PartnerRoom) < 1f
+                && (LPlayer.LocalPlayer.Skin.Model == new Model("M_Y_SWAT") | LPlayer.LocalPlayer.Skin.Model == new Model("M_Y_NHELIPILOT")))
             {
                 Functions.PrintHelp("To reset the save progress, press ~KEY_ACCEPT_CALLOUT~ to confirm while standing.");
                 Functions.PrintText("Reset NooseMod save progress?", 5000);

@@ -19,6 +19,8 @@
 
 using LCPD_First_Response.Engine.Scripting.Entities;
 using NooseMod_LCPDFR.Properties;
+using NooseMod_LCPDFR.Mission_Controller;
+using NooseMod_LCPDFR.Global_Controller;
 using System;
 
 namespace NooseMod_LCPDFR.Callouts
@@ -150,12 +152,14 @@ namespace NooseMod_LCPDFR.Callouts
 
                 // Create 
                 this.vehicle = new LVehicle(World.GetNextPositionOnStreet(this.spawnPosition), Common.GetRandomCollectionValue<string>(this.vehicleModels));
-                if (this.vehicle.Exists())
+                //if (this.vehicle.Exists())
+                if (ValidityCheck.isObjectValid(this.vehicle))
                 {
                     // Ensure vehicle is freed on end
                     Functions.AddToScriptDeletionList(this.vehicle, this);
                     this.vehicle.PlaceOnNextStreetProperly();
-                    this.vehicle.EngineRunning = this.vehicle.Exists();
+                    //this.vehicle.EngineRunning = this.vehicle.Exists();
+                    this.vehicle.EngineRunning = ValidityCheck.isObjectValid(this.vehicle);
 
                     int peds = Common.GetRandomValue(1, 4);
 
@@ -165,7 +169,8 @@ namespace NooseMod_LCPDFR.Callouts
                     {
                         // Spawn ped
                         this.terrorists[i] = new LPed(World.GetNextPositionOnStreet(this.vehicle.Position), Common.GetRandomCollectionValue<string>(this.criminalModels), LPed.EPedGroup.Criminal);
-                        if (this.terrorists[i].Exists())
+                        //if (this.terrorists[i].Exists())
+                        if (ValidityCheck.isObjectValid(this.terrorists[i]))
                         {
                             // If vehicle doesn't have a driver yet, warp terrorist as driver
                             if (!this.vehicle.HasDriver)
@@ -219,14 +224,15 @@ namespace NooseMod_LCPDFR.Callouts
                         LPed[] Nooses =
                         {
                             copCar.CreatePedOnSeat(VehicleSeat.Driver, new CModel(new Model("M_Y_SWAT")), RelationshipGroup.Cop),
-                            copCar.CreatePedOnSeat(VehicleSeat.RightFront, new CModel(new Model("M_Y_SWAT")),RelationshipGroup.Cop),
-                            copCar.CreatePedOnSeat(VehicleSeat.LeftRear, new CModel(new Model("M_Y_SWAT")),RelationshipGroup.Cop),
-                            copCar.CreatePedOnSeat(VehicleSeat.RightRear, new CModel(new Model("M_Y_SWAT")),RelationshipGroup.Cop)
+                            copCar.CreatePedOnSeat(VehicleSeat.RightFront, new CModel(new Model("M_Y_SWAT")), RelationshipGroup.Cop),
+                            copCar.CreatePedOnSeat(VehicleSeat.LeftRear, new CModel(new Model("M_Y_SWAT")), RelationshipGroup.Cop),
+                            copCar.CreatePedOnSeat(VehicleSeat.RightRear, new CModel(new Model("M_Y_SWAT")), RelationshipGroup.Cop)
                         };
 
                         for (int i = 0; i < Nooses.Length; i++)
                         {
-                            if (Nooses[i] != null && Nooses[i].Exists())
+                            //if (Nooses[i] != null && Nooses[i].Exists())
+                            if (ValidityCheck.isObjectValid(Nooses[i]))
                             {
                                 Functions.AddToScriptDeletionList(Nooses[i], this);
                                 copCar.SirenActive = true;

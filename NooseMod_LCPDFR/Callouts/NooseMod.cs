@@ -24,8 +24,9 @@ using LCPD_First_Response.Engine;
 using LCPD_First_Response.Engine.Scripting.Entities;
 using LCPD_First_Response.LCPDFR.API;
 using LCPD_First_Response.LCPDFR.Callouts;
-//using Microsoft.DirectX.AudioVideoPlayback;
+using Microsoft.DirectX.AudioVideoPlayback;
 using NooseMod_LCPDFR.Mission_Controller;
+using NooseMod_LCPDFR.Global_Controller;
 using NooseMod_LCPDFR.Properties;
 using NooseMod_LCPDFR.StatsDataSetTableAdapters;
 using System;
@@ -34,7 +35,7 @@ using System.Data;
 using System.Data.OleDb;
 using System.Drawing;
 using System.IO;
-//using System.Media;
+using System.Media;
 using System.Text;
 #endregion
 
@@ -369,12 +370,22 @@ namespace NooseMod_LCPDFR.Callouts
         {
             int value = SettingsIni.GetValueInteger("Difficulty", "GlobalSettings", 2);
             Difficulty fixedDiff;
-            switch (value)
+            try
             {
-                case 1: fixedDiff = Difficulty.Easy; break;
-                case 2: fixedDiff = Difficulty.Medium; break;
-                case 3: fixedDiff = Difficulty.Hard; break;
-                default: throw new Exception("No difficulty is set");
+                if (controller.HardcoreModeIsActive()) fixedDiff = Difficulty.Hard;
+                else switch (value)
+                {
+                    case 1: fixedDiff = Difficulty.Easy; break;
+                    case 2: fixedDiff = Difficulty.Medium; break;
+                    case 3: fixedDiff = Difficulty.Hard; break;
+                    default: throw new Exception("No difficulty is set");
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Error getting Difficulty: " + ex, this);
+                Log.Error("Defaulting to Medium...", this);
+                fixedDiff = Difficulty.Medium;
             }
             return fixedDiff;
         }
@@ -403,7 +414,7 @@ namespace NooseMod_LCPDFR.Callouts
         {
             // Load last saved game
             lastPlayedMission = controller.LoadGame();
-            controller.GetMissionData_NoLog();
+            controller.GetMissionData();
 
             // increment the current value (if -1, it will load the list zero)
             lastPlayedMission++;
@@ -412,7 +423,8 @@ namespace NooseMod_LCPDFR.Callouts
             try
             {
                 Mission currentMissionToPlayNow = controller.missionVariableCheckup(lastPlayedMission);
-                Log.Debug("Initializing mission with the name: " + currentMissionToPlayNow.Name, this);
+                Log.Debug("Initializing mission with the name: " + currentMissionToPlayNow.Name + ", ID: " + lastPlayedMission, this);
+                Log.Info("Loading mission with ID " + lastPlayedMission, this);
 
                 // Get Mission Time
                 TimeSpan currentTime = World.CurrentDayTime;
@@ -441,19 +453,20 @@ namespace NooseMod_LCPDFR.Callouts
                         }
 
                         // Check if the mission starts at 00:00, as from 23:59 it will reset to 00:00
-                        else if (currentTime >= interval1 && currentTime <= interval3 && currentTime >= new TimeSpan(0, 0, 0) && currentTime <= interval2)
+                        else if (currentTime >= interval1 && currentTime <= interval3 || currentTime >= TimeSpan.Zero && currentTime <= interval2)
                         {
                             Log.Debug("Mission started between " + interval1 + " and " + interval2, this);
                             activeMission = controller.PlayMission(lastPlayedMission);
                         }
 
                         // No resources loaded, so if not within specified time, end it from the call base
-                        // and start another callout instead
+                        // and start custom internal callout instead
                         else
                         {
                             Log.Debug("Mission ended: " + currentTime + " is not in specified interval", this);
                             base.End();
                             Functions.StartCallout("NooseModPursuit");
+                            Log.Info("Started Pursuit callout: current mission must start between " + interval1 + " and " + interval2 + ", while current time is " + currentTime, this);
                             return;
                         }
                     }
@@ -467,12 +480,13 @@ namespace NooseMod_LCPDFR.Callouts
                 }
 
                 // End the callout from the base if the save file is exceeding the mission list
-                // and start another callout instead
+                // and start custom internal callout instead
                 else
                 {
                     Log.Debug("Mission ended: " + lastPlayedMission + " exceeds the list of " + controller.loadedMissions.Count + " missions", this);
                     base.End();
                     Functions.StartCallout("NooseModPursuit");
+                    Log.Info("Started Pursuit callout: all NooseMod missions are accomplished; please restart from the Police Station", this);
                     return;
                 }
 
@@ -491,7 +505,7 @@ namespace NooseMod_LCPDFR.Callouts
             AddMinimumDistanceCheck((float)1000, spawnPosition);
 
             // Call it in
-            int i = Common.GetRandomValue(0, 6);
+            int i = Common.GetRandomValue(0, 8);
             Log.Debug("Loaded audio and text ID " + i, this);
             switch (i)
             {
@@ -503,7 +517,7 @@ namespace NooseMod_LCPDFR.Callouts
                 case 1:
                     //this.CalloutMessage = string.Format(Functions.GetStringFromLanguageFile("CALLOUT_NOOSEMOD_TERRORIST_ACTIVITY_2"), Functions.GetAreaStringFromPosition(this.spawnPosition));
                     this.CalloutMessage = string.Format(Resources.CALLOUT_NOOSEMOD_TERRORIST_ACTIVITY_2, Functions.GetAreaStringFromPosition(this.spawnPosition));
-                    Functions.PlaySoundUsingPosition("UNITS_PLEASE_BE_ADVISED INS_WE_HAVE A_LONGER INS_TRAFFIC_ALERT_FOR CRIM_A_CRIMINAL_ON_A_GUN_SPREE IN_OR_ON_POSITION", this.spawnPosition);
+                    Functions.PlaySoundUsingPosition("UNITS_PLEASE_BE_ADVISED INS_WE_HAVE A_NEW_03 INS_TRAFFIC_ALERT_FOR CRIM_A_CRIMINAL_ON_A_GUN_SPREE IN_OR_ON_POSITION", this.spawnPosition);
                     break;
                 case 2:
                     //this.CalloutMessage = string.Format(Functions.GetStringFromLanguageFile("CALLOUT_NOOSEMOD_TERRORIST_ACTIVITY_3"), Functions.GetAreaStringFromPosition(this.spawnPosition));
@@ -539,6 +553,16 @@ namespace NooseMod_LCPDFR.Callouts
                     this.CalloutMessage = string.Format(Resources.CALLOUT_NOOSEMOD_TERRORIST_ACTIVITY_7, Functions.GetAreaStringFromPosition(this.spawnPosition));
                     Functions.PlaySoundUsingPosition(audioMessage + crimeMessage + " IN_OR_ON_POSITION", this.spawnPosition);
                     break;
+                case 6:
+                    //this.CalloutMessage = string.Format(Functions.GetStringFromLanguageFile("CALLOUT_NOOSEMOD_TERRORIST_ACTIVITY_2"), Functions.GetAreaStringFromPosition(this.spawnPosition));
+                    this.CalloutMessage = string.Format(Resources.CALLOUT_NOOSEMOD_TERRORIST_ACTIVITY_2, Functions.GetAreaStringFromPosition(this.spawnPosition));
+                    Functions.PlaySoundUsingPosition("INS_AVAILABLE_UNITS_RESPOND_TO ERR_ERRR_14 INS_TRAFFIC_ALERT_FOR CRIM_A_CRIMINAL_ON_A_GUN_SPREE IN_OR_ON_POSITION", this.spawnPosition);
+                    break;
+                case 7:
+                    //this.CalloutMessage = string.Format(Functions.GetStringFromLanguageFile("CALLOUT_NOOSEMOD_TERRORIST_ACTIVITY"), Functions.GetAreaStringFromPosition(this.spawnPosition));
+                    this.CalloutMessage = string.Format(Resources.CALLOUT_NOOSEMOD_TERRORIST_ACTIVITY, Functions.GetAreaStringFromPosition(this.spawnPosition));
+                    Functions.PlaySoundUsingPosition("INS_THIS_IS_CONTROL_WE_HAVE CRIM_TERRORIST_ACTIVITY IN_OR_ON_POSITION ALL_UNITS_PLEASE_RESPOND", this.spawnPosition);
+                    break;
             }
 
             mission = MissionState.OnDuty;
@@ -555,7 +579,7 @@ namespace NooseMod_LCPDFR.Callouts
             bool isReadyForMission = base.OnCalloutAccepted();
             lastPlayerRoom = LPlayer.LocalPlayer.Ped.CurrentRoom;
 
-            // Clear resources first
+            // Clear the list first
             deadSuspects.Clear(); deadHostages.Clear(); hostages.Clear(); arrestedSuspects.Clear(); missionPeds.Clear(); squad.Clear(); PoliceOfficers.Clear();
 
             // Create squad to follow
@@ -572,7 +596,8 @@ namespace NooseMod_LCPDFR.Callouts
                 LPed[] partner = Functions.GetPartnerPeds(partMan);
 
                 // Adds more action by adding additional squads in
-                if (partner != null)
+                //if (partner != null)
+                if (ValidityCheck.isObjectValid(partner))
                 {
                     // Latest LCPDFR features getting a partner up to 3 people, so if not 3, this is NOT processed.
                     if (partner.Length != 3)
@@ -726,9 +751,19 @@ namespace NooseMod_LCPDFR.Callouts
                         }
                         SquadTroops[i].Weapons.FromType(Weapon.Thrown_Grenade).Ammo = 1;
                         SquadTroops[i].Weapons.FromType(Weapon.Melee_Knife);
-                        SquadTroops[i].Weapons.FromType(controller.AssignCounterTerroristWeapon(x)).Ammo = 999;
-                        SquadTroops[i].Weapons.FromType(controller.AssignCounterTerroristWeapon(y)).Ammo = 999;
-                        SquadTroops[i].Weapons.Select(controller.AssignCounterTerroristWeapon(y));
+                        if (controller.AssignCounterTerroristWeapon(x) != Weapon.Unarmed)
+                            SquadTroops[i].Weapons.FromType(controller.AssignCounterTerroristWeapon(x)).Ammo = 999;
+                        else SquadTroops[i].Weapons.DesertEagle.Ammo = 999;
+                        if (controller.AssignCounterTerroristWeapon(y) != Weapon.Unarmed)
+                        {
+                            SquadTroops[i].Weapons.FromType(controller.AssignCounterTerroristWeapon(y)).Ammo = 999;
+                            SquadTroops[i].Weapons.Select(controller.AssignCounterTerroristWeapon(y));
+                        }
+                        else
+                        {
+                            SquadTroops[i].Weapons.AssaultRifle_M4.Ammo = 3000;
+                            SquadTroops[i].Weapons.AssaultRifle_M4.Select();
+                        }
                         //Functions.AddToScriptDeletionList(SquadTroops[i], this);
                         Functions.SetPedIsOwnedByScript(SquadTroops[i], this, true);
                         SquadTroops[i].BlockPermanentEvents = true;
@@ -798,18 +833,18 @@ namespace NooseMod_LCPDFR.Callouts
             if (activeMission.HostageLocations.Count == 0)
             {
                 // Mission without hostages will start with 4x time limit than normal, useful if you are having a hard time to reach target location.
-                // Example: distance from Middle Park to crime scene: 200, time: 200000*10 ms or 200 seconds (3 min. 20 sec.) -> 290 seconds (4 min. 50 sec.) after addition -> 1160 seconds (19 min. 20 sec.) if the crime scene doesn't contain hostages
+                // Example: distance from Middle Park to crime scene: 200, time: 200*10 ms or 200 seconds (3 min. 20 sec.) -> 290 seconds (4 min. 50 sec.) after addition -> 1160 seconds (19 min. 20 sec.) if the crime scene doesn't contain hostages
                 // The tick of an interval is per ten milliseconds (LCPDFR runs on 10 interval)
-                timeForTerroristsToBreak = ((int)myPos.DistanceTo(this.spawnPosition) * 100 + 9000) * 4;
+                timeForTerroristsToBreak = ((Int32)myPos.DistanceTo(this.spawnPosition) + 900) * 4;
                 hostages_isAvailable = false;
             }
             else
             {
-                // Grab a distance check and multiply it into 100, then add 9000 (90 seconds)
-                // Example: distance from Middle Park to crime scene: 200, time: 200000*10 ms or 200 seconds (3 min. 20 sec.) -> 290 seconds (4 min. 50 sec.) after addition
+                // Grab a distance check and add 900 (90 seconds)
+                // Example: distance from Middle Park to crime scene: 200, time: 200*10 ms or 200 seconds (3 min. 20 sec.) -> 290 seconds (4 min. 50 sec.) after addition
                 // The timer depends on the location you are responding, so that you will not be so hustle
                 //  (1 minute is rather extreme if you're responding in Alderney while the target location is at Broker).
-                timeForTerroristsToBreak = (int)myPos.DistanceTo(this.spawnPosition) * 100 + 9000;
+                timeForTerroristsToBreak = (Int32)myPos.DistanceTo(this.spawnPosition) + 900;
                 hostages_number_temp = activeMission.HostageLocations.Count;
                 hostages_isAvailable = true;
             }
@@ -837,9 +872,9 @@ namespace NooseMod_LCPDFR.Callouts
             // The tick of the script interval is per ten milliseconds (LCPDFR runs on 10 interval)
             ticks++;
             int RemainingTime = timeForTerroristsToBreak - ticks;
-            ETA_ToCrimeScene = CurrentGameTime + TimeSpan.FromTicks((Int64)timeForTerroristsToBreak * (10^1));
+            ETA_ToCrimeScene = CurrentGameTime + TimeSpan.FromTicks((Int64)timeForTerroristsToBreak * (10^4));
             Game.DisplayText("Time to Reach the Crime Scene: " + RemainingTime + ", ETA: " + ETA_ToCrimeScene);
-            if (LPlayer.LocalPlayer.Ped.Position.DistanceTo(this.spawnPosition) > (float)150)
+            if (LPlayer.LocalPlayer.Ped.Position.DistanceTo(this.spawnPosition) > (float)120)
             {
                 if (ticks >= timeForTerroristsToBreak)
                 {
@@ -847,7 +882,7 @@ namespace NooseMod_LCPDFR.Callouts
                     if (hostage_kill_list != hostages_number_temp && hostages_isAvailable)
                     {
                         hostage_kill_list++;
-                        timeForTerroristsToBreak += 15000;
+                        timeForTerroristsToBreak += 1500;
                         CurrentGameTime = World.CurrentDayTime;
 
                         // If reported three hostages killed (when exists), radio it in
@@ -877,24 +912,24 @@ namespace NooseMod_LCPDFR.Callouts
                 Log.Debug("WaitingForPlayer: Safe Mode is " + safeMode, this);
                 if (safeMode == false) try
                     {
-                        LVehicle copCarBlock1 = new LVehicle(World.GetPositionAround(spawnPosition, (float)Common.GetRandomValue(20, 50)), "POLICE");
+                        LVehicle copCarBlock1 = new LVehicle(World.GetPositionAround(spawnPosition, (Single)Common.GetRandomValue(20, 50)), "POLICE");
                         copCarBlock1.PlaceOnGroundProperly();
                         copCarBlock1.SirenActive = true;
                         copCarBlock1.EngineRunning = true;
                         Functions.AddToScriptDeletionList(copCarBlock1, this);
-                        LVehicle copCarBlock2 = new LVehicle(World.GetPositionAround(spawnPosition, (float)Common.GetRandomValue(20, 50)), "POLICE");
+                        LVehicle copCarBlock2 = new LVehicle(World.GetPositionAround(spawnPosition, (Single)Common.GetRandomValue(20, 50)), "POLICE");
                         copCarBlock2.PlaceOnGroundProperly();
                         copCarBlock2.SirenActive = true;
                         copCarBlock2.EngineRunning = true;
                         Functions.AddToScriptDeletionList(copCarBlock2, this);
-                        LVehicle copCarBlock3 = new LVehicle(World.GetPositionAround(spawnPosition, (float)Common.GetRandomValue(20, 50)), "POLICE");
+                        LVehicle copCarBlock3 = new LVehicle(World.GetPositionAround(spawnPosition, (Single)Common.GetRandomValue(20, 50)), "POLICE");
                         copCarBlock3.PlaceOnGroundProperly();
                         copCarBlock3.SirenActive = true;
                         copCarBlock3.EngineRunning = true;
                         Functions.AddToScriptDeletionList(copCarBlock3, this);
                         for (int i = 0; i <= 6; i++) // 0 to 6, 7 peds allocated
                         {
-                            PoliceOfficers.Add(new LPed(copCarBlock1.GetOffsetPosition(spawnPosition).Around((float)(Common.GetRandomValue(9, 20))), "M_Y_COP"));
+                            PoliceOfficers.Add(new LPed(copCarBlock1.GetOffsetPosition(spawnPosition).Around((Single)(Common.GetRandomValue(9, 20))), "M_Y_COP"));
                             PoliceOfficers[i].Weapons.RemoveAll();
                             PoliceOfficers[i].Weapons.FromType(Weapon.Handgun_Glock).Ammo = 999;
                             PoliceOfficers[i].Weapons.FromType(Weapon.Rifle_M4).Ammo = 300;
@@ -911,7 +946,7 @@ namespace NooseMod_LCPDFR.Callouts
                         }
                         for (int i = 7; i <= 12; i++) // 7 to 12, 5 peds allocated
                         {
-                            PoliceOfficers.Add(new LPed(copCarBlock2.GetOffsetPosition(spawnPosition).Around((float)(Common.GetRandomValue(9, 20))), "M_Y_COP"));
+                            PoliceOfficers.Add(new LPed(copCarBlock2.GetOffsetPosition(spawnPosition).Around((Single)(Common.GetRandomValue(9, 20))), "M_Y_COP"));
                             PoliceOfficers[i].Weapons.RemoveAll();
                             PoliceOfficers[i].Weapons.FromType(Weapon.Handgun_Glock).Ammo = 999;
                             PoliceOfficers[i].Weapons.FromType(Weapon.Shotgun_Baretta).Ammo = 40;
@@ -948,15 +983,21 @@ namespace NooseMod_LCPDFR.Callouts
                     {
                         string selectedModel = null;
                         if (isBikerGangUsedInCallout == false) { selectedModel = controller.LoadRandomRegisteredPeds(); }
-                        else
-                        {
-                            switch (SettingsIni.GetValueString("GangType", "GlobalSettings", "AOD"))
+                        else try
                             {
-                                case "AOD": selectedModel = controller.LoadAODBikerGangPeds(); break;
-                                case "TLMC": selectedModel = controller.LoadTLMCBikerGangPeds(); break;
-                                default: throw new Exception("Invalid GangType: Must between AOD and TLMC");
+                                switch (SettingsIni.GetValueString("GangType", "GlobalSettings", "AOD"))
+                                {
+                                    case "AOD": selectedModel = controller.LoadAODBikerGangPeds(); break;
+                                    case "TLMC": selectedModel = controller.LoadTLMCBikerGangPeds(); break;
+                                    default: throw new Exception("Invalid GangType: Must between AOD and TLMC");
+                                }
                             }
-                        }
+                            catch (Exception ex)
+                            {
+                                Log.Error("Error getting GangType: " + ex, this);
+                                Log.Error("Defaulting to spawn AOD Peds...", this);
+                                selectedModel = controller.LoadAODBikerGangPeds();
+                            }
 
                         LPed suspectPed = new LPed(suspectLocation, selectedModel, LPed.EPedGroup.MissionPed);
 
@@ -994,6 +1035,14 @@ namespace NooseMod_LCPDFR.Callouts
                                     suspectPed.ChangeRelationship(RelationshipGroup.Civillian_Female, Relationship.Dislike);
                                     suspectPed.CantBeDamagedByRelationshipGroup(RelationshipGroup.Gang_Biker2, true);
                                     break;
+                                default: // return as AOD if an exception was caught during GangType selection
+                                    suspectPed.RelationshipGroup = RelationshipGroup.Gang_Biker2;
+                                    suspectPed.ChangeRelationship(RelationshipGroup.Gang_Biker2, Relationship.Companion);
+                                    suspectPed.ChangeRelationship(RelationshipGroup.Cop, Relationship.Hate);
+                                    suspectPed.ChangeRelationship(RelationshipGroup.Civillian_Male, Relationship.Dislike);
+                                    suspectPed.ChangeRelationship(RelationshipGroup.Civillian_Female, Relationship.Dislike);
+                                    suspectPed.CantBeDamagedByRelationshipGroup(RelationshipGroup.Gang_Biker2, true);
+                                    break;
                             }
                         suspectPed.Task.GuardCurrentPosition();
                         suspectPed.Enemy = true;
@@ -1006,9 +1055,18 @@ namespace NooseMod_LCPDFR.Callouts
                         if (isBikerGangUsedInCallout == false && Game.CurrentEpisode != GameEpisode.TLAD)
                         // If not running TLAD and Biker Gang is not used, assign random weapon
                         {
-                            suspectPed.Weapons.FromType(controller.AssignTerroristWeapon(9)).Ammo = 1;
-                            suspectPed.Weapons.FromType(controller.AssignTerroristWeapon(num)).Ammo = 9999;
-                            suspectPed.Weapons.Select(controller.AssignTerroristWeapon(num));
+                            if (controller.AssignTerroristWeapon(num) != Weapon.Unarmed)
+                            {
+                                suspectPed.Weapons.FromType(controller.AssignTerroristWeapon(9)).Ammo = 1;
+                                suspectPed.Weapons.FromType(controller.AssignTerroristWeapon(num)).Ammo = 9999;
+                                suspectPed.Weapons.Select(controller.AssignTerroristWeapon(num));
+                            }
+                            else
+                            {
+                                suspectPed.Weapons.Grenades.Ammo = 1;
+                                suspectPed.Weapons.Uzi.Ammo = 9999;
+                                suspectPed.Weapons.Uzi.Select();
+                            }
                         }
                         else if (isBikerGangUsedInCallout == true && Game.CurrentEpisode == GameEpisode.TLAD)
                         // Running TLAD with Biker Gang used adds ONLY ability to assign TLAD-specific weapons
@@ -1019,21 +1077,46 @@ namespace NooseMod_LCPDFR.Callouts
                             bool getIVWeapons = Common.GetRandomBool(0, 7, 1);
                             if (getIVWeapons)
                             {
-                                suspectPed.Weapons.FromType(controller.AssignTerroristWeapon(num)).Ammo = 2 ^ 12;
-                                suspectPed.Weapons.Select(controller.AssignTerroristWeapon(num));
+                                if (controller.AssignTerroristWeapon(num) != Weapon.Unarmed)
+                                {
+                                    suspectPed.Weapons.FromType(controller.AssignTerroristWeapon(num)).Ammo = 2 ^ 12;
+                                    suspectPed.Weapons.Select(controller.AssignTerroristWeapon(num));
+                                }
+                                else
+                                {
+                                    suspectPed.Weapons.MP5.Ammo = 9999;
+                                    suspectPed.Weapons.MP5.Select();
+                                }
                             }
                             else
                             {
-                                suspectPed.Weapons.FromType(controller.AssignTerroristWeapon(rand)).Ammo = 2 ^ 10;
-                                suspectPed.Weapons.Select(controller.AssignTerroristWeapon(rand));
+                                if (controller.AssignTerroristWeapon(rand) != Weapon.Unarmed)
+                                {
+                                    suspectPed.Weapons.FromType(controller.AssignTerroristWeapon(rand)).Ammo = 2 ^ 10;
+                                    suspectPed.Weapons.Select(controller.AssignTerroristWeapon(rand));
+                                }
+                                else
+                                {
+                                    suspectPed.Weapons.FromType(Weapon.TLAD_Automatic9mm).Ammo = 9999;
+                                    suspectPed.Weapons.Select(Weapon.TLAD_Automatic9mm);
+                                }
                             }
                         }
                         else
                         // TBoGT, IV, and between used or not, the Biker Gang
                         {
-                            suspectPed.Weapons.FromType(controller.AssignTerroristWeapon(9)).Ammo = 1;
-                            suspectPed.Weapons.FromType(controller.AssignTerroristWeapon(num)).Ammo = 9999;
-                            suspectPed.Weapons.Select(controller.AssignTerroristWeapon(num));
+                            if (controller.AssignTerroristWeapon(num) != Weapon.Unarmed)
+                            {
+                                suspectPed.Weapons.FromType(controller.AssignTerroristWeapon(9)).Ammo = 1;
+                                suspectPed.Weapons.FromType(controller.AssignTerroristWeapon(num)).Ammo = 9999;
+                                suspectPed.Weapons.Select(controller.AssignTerroristWeapon(num));
+                            }
+                            else
+                            {
+                                suspectPed.Weapons.Grenades.Ammo = 1;
+                                suspectPed.Weapons.Uzi.Ammo = 9999;
+                                suspectPed.Weapons.Uzi.Select();
+                            }
                         }
 
                         // Last but not least
@@ -1059,7 +1142,7 @@ namespace NooseMod_LCPDFR.Callouts
 
                     // Kill hostages
                     if (hostage_kill_list != 0) for (int i = 0; i < hostage_kill_list; i++)
-                            if (hostages[i] != null || hostages[i].Exists())
+                            if (ValidityCheck.isObjectValid(hostages[i]))
                                 if (hostages[i].isAliveAndWell && !hostages[i].isDead)
                                 {
                                     hostages[i].Die();
@@ -1070,12 +1153,12 @@ namespace NooseMod_LCPDFR.Callouts
                             else continue;
 
                     // Make sure the suspects are everything-proof first before attempting to charge in
-                    foreach (LPed myped in missionPeds) if (myped != null || myped.Exists())
+                    foreach (LPed myped in missionPeds) if (ValidityCheck.isObjectValid(myped))
                             myped.MakeProofTo(true, true, true, true, true);
                         else continue;
 
                     // If the first NOOSE vehicle is not yet at the scene, warp
-                    if (nooseVeh1 != null) try
+                    if (ValidityCheck.isObjectValid(nooseVeh1)) try
                         {
                             if (nooseVeh1.Position.DistanceTo(this.spawnPosition) > (float)400 && nooseVeh1.Exists())
                             {
@@ -1086,7 +1169,7 @@ namespace NooseMod_LCPDFR.Callouts
                         catch (Exception ex) { Log.Error("WaitingForPlayer(): Error getting vehicle data or object: " + ex, this); }
 
                     // If the third NOOSE vehicle is exists/available at start but not yet at the scene, warp
-                    if (nooseVeh3 != null) try
+                    if (ValidityCheck.isObjectValid(nooseVeh3)) try
                         {
                             if (nooseVeh3.Position.DistanceTo(this.spawnPosition) > (float)500 && nooseVeh3.Exists())
                             {
@@ -1123,13 +1206,21 @@ namespace NooseMod_LCPDFR.Callouts
 
             // When arrived in time, dispatch NOOSE Squad in with additional police force
             // Breach in when in position
-            nooseVeh2 = new LVehicle(World.GetPositionAround(this.spawnPosition, (float)(2 ^ 9)), Common.GetRandomCollectionValue<string>(nooseVehicleModels));
-            LPed nooseDisp1 = nooseVeh2.CreatePedOnSeat(VehicleSeat.Driver, SWATTrooper, RelationshipGroup.Cop);
+            nooseVeh2 = new LVehicle(World.GetPositionAround(this.spawnPosition, (Single)(2 ^ 9)), Common.GetRandomCollectionValue<string>(nooseVehicleModels));
+            /*LPed nooseDisp1 = nooseVeh2.CreatePedOnSeat(VehicleSeat.Driver, SWATTrooper, RelationshipGroup.Cop);
             LPed nooseDisp2 = nooseVeh2.CreatePedOnSeat(VehicleSeat.AnyPassengerSeat, SWATTrooper, RelationshipGroup.Cop);
             LPed nooseDisp3 = nooseVeh2.CreatePedOnSeat(VehicleSeat.AnyPassengerSeat, SWATTrooper, RelationshipGroup.Cop);
             LPed nooseDisp4 = nooseVeh2.CreatePedOnSeat(VehicleSeat.AnyPassengerSeat, SWATTrooper, RelationshipGroup.Cop);
             nooseDisp1.Task.DriveTo(this.spawnPosition, 9999.9999f, false, true);
             SquadTroops = new LPed[4] { nooseDisp1, nooseDisp2, nooseDisp3, nooseDisp4 };
+             * */
+            SquadTroops = new LPed[4]
+            {
+                nooseVeh2.CreatePedOnSeat(VehicleSeat.Driver, SWATTrooper, RelationshipGroup.Cop),
+                nooseVeh2.CreatePedOnSeat(VehicleSeat.AnyPassengerSeat, SWATTrooper, RelationshipGroup.Cop),
+                nooseVeh2.CreatePedOnSeat(VehicleSeat.AnyPassengerSeat, SWATTrooper, RelationshipGroup.Cop),
+                nooseVeh2.CreatePedOnSeat(VehicleSeat.AnyPassengerSeat, SWATTrooper, RelationshipGroup.Cop)
+            };
             for (int i = 0; i < SquadTroops.Length; i++)
             {
                 SquadTroops[i].ChangeRelationship(RelationshipGroup.Cop, Relationship.Companion);
@@ -1174,6 +1265,12 @@ namespace NooseMod_LCPDFR.Callouts
             Functions.PrintText(Resources.CALLOUT_NOOSEMOD_STANDBY, 10000);
             Functions.AddToScriptDeletionList(nooseVeh2, this);
 
+            if (nooseVeh2.HasDriver)
+            {
+                LPed driver = nooseVeh2.GetPedOnSeat(VehicleSeat.Driver);
+                driver.Task.DriveTo(this.spawnPosition, 9999.9999f, false, true);
+            }
+
             mission = MissionState.Initialize;
         }
 
@@ -1184,7 +1281,7 @@ namespace NooseMod_LCPDFR.Callouts
         {
             if (nooseVeh2.Position.DistanceTo(this.spawnPosition) <= (float)60 && mission == MissionState.Initialize)
             {
-                if (nooseVeh2.Blip != null || nooseVeh2.Blip.Exists())
+                if (ValidityCheck.isObjectValid(nooseVeh2.Blip))
                     nooseVeh2.Blip.Delete();
                 Initialize();
             }
@@ -1198,7 +1295,7 @@ namespace NooseMod_LCPDFR.Callouts
         {
             for (int i = 0; i < squad.Count; i++)
             {
-                if (squad[i] != null || squad[i].Exists())
+                if (ValidityCheck.isObjectValid(squad[i]))
                 {
                     if (squad[i].IsInVehicle() && squad[i].Position.DistanceTo(this.spawnPosition) <= 80f)
                     {
@@ -1233,7 +1330,7 @@ namespace NooseMod_LCPDFR.Callouts
             controller.entryLoc.Delete();
 
             // Make sure they are exist before making adjustments
-            foreach (LPed myped in missionPeds) if (myped != null || myped.Exists()) try
+            foreach (LPed myped in missionPeds) if (ValidityCheck.isObjectValid(myped)) try
                     {
                         Functions.AddPedToPursuit(this.pursuit, myped);
                         myped.DisablePursuitAI = true;
@@ -1263,7 +1360,7 @@ namespace NooseMod_LCPDFR.Callouts
                         else if (difficulty == Difficulty.Hard) // Armored and 1.5x SHOOT accuracy
                             try
                             {
-                                if (myped.Blip != null) myped.DeleteBlip();
+                                if (ValidityCheck.isObjectValid(myped.Blip)) myped.DeleteBlip();
                             }
                             catch (Exception ex)
                             {
@@ -1295,7 +1392,7 @@ namespace NooseMod_LCPDFR.Callouts
                 else continue;
 
             // Make sure they are exist before making adjustments
-            foreach (Ped myped in hostages) if (myped.Exists() || myped != null) try
+            foreach (Ped myped in hostages) if (ValidityCheck.isObjectValid(myped)) try
                     {
                         if (difficulty == Difficulty.Easy)
                         {
@@ -1324,19 +1421,19 @@ namespace NooseMod_LCPDFR.Callouts
             Functions.PrintText(Resources.CALLOUT_NOOSEMOD_FIGHT_SUSPECTS, 25000);
             Log.Debug("InitiateShootout: Initialized", this);
 
-            if (nooseVeh1 != null || nooseVeh1.Exists()) try
+            if (ValidityCheck.isObjectValid(nooseVeh1)) try
                 {
                     nooseVeh1.MakeProofTo(false, false, false, false, false);
                 }
                 catch (Exception ex) { Log.Error("InitiateShootout(): Failed to disable invulnerability on a vehicle: " + ex, this); }
 
-            if (nooseVeh2 != null || nooseVeh2.Exists()) try
+            if (ValidityCheck.isObjectValid(nooseVeh2)) try
                 {
                     nooseVeh2.MakeProofTo(false, false, false, false, false);
                 }
                 catch (Exception ex) { Log.Error("InitiateShootout(): Failed to disable invulnerability on a vehicle: " + ex, this); }
 
-            if (nooseVeh3 != null || nooseVeh3.Exists()) try
+            if (ValidityCheck.isObjectValid(nooseVeh3)) try
                 {
                     nooseVeh3.MakeProofTo(false, false, false, false, false);
                 }
@@ -1388,7 +1485,7 @@ namespace NooseMod_LCPDFR.Callouts
 
             foreach (LPed myped in missionPeds) try
                 {
-                    if (myped != null && myped.IsAlive && myped.Exists())
+                    if (ValidityCheck.isObjectValid(myped) && myped.IsAlive)
                     {
                         // Reset the task
                         myped.Task.AlwaysKeepTask = false;
@@ -1407,7 +1504,7 @@ namespace NooseMod_LCPDFR.Callouts
                         // Escape by any means necessary
                         foreach (Ped officers in World.GetAllPeds(new Model("M_Y_COP")))
                         {
-                            if (officers != null && officers.Exists())
+                            if (ValidityCheck.isObjectValid(officers))
                             {
                                 myped.Task.FleeFromChar(officers);
                                 myped.Task.FightAgainst(officers, -1);
@@ -1415,7 +1512,7 @@ namespace NooseMod_LCPDFR.Callouts
                         }
                         foreach (Ped squads in World.GetAllPeds(new Model("M_Y_SWAT")))
                         {
-                            if (squads != null && squads.Exists())
+                            if (ValidityCheck.isObjectValid(squads))
                             {
                                 myped.Task.FleeFromChar(squads);
                                 myped.Task.FightAgainst(squads, -1);
@@ -1498,7 +1595,7 @@ namespace NooseMod_LCPDFR.Callouts
                     {
                         if (myBlip.GetAttachedItem() == myped) try
                             {
-                                if (myBlip != null) myBlip.Delete();
+                                if (ValidityCheck.isObjectValid(myBlip)) myBlip.Delete();
                             }
                             catch (Exception ex) { Log.Error("Cannot delete hostage blip: " + ex, this); continue; }
                         else continue;
@@ -1524,15 +1621,15 @@ namespace NooseMod_LCPDFR.Callouts
             {
                 foreach (LPed myped in missionPeds) try
                     {
-                        if (myped != null)
+                        if (ValidityCheck.isObjectValid(myped))
                         {
-                            if (myped.Exists() && myped.IsDead)
+                            if (myped.IsDead)
                             {
                                 deadSuspects.Add(myped);
                                 missionPeds.Remove(myped);
                             }
                             // At some point, NOOSE intimidation has a chance for the terrorist to surrender
-                            else if (myped.Exists() && myped.IsAlive && myped.HasBeenArrested)
+                            else if (myped.IsAlive && myped.HasBeenArrested)
                             {
                                 arrestedSuspects.Add(myped);
                                 missionPeds.Remove(myped);
@@ -1580,7 +1677,7 @@ namespace NooseMod_LCPDFR.Callouts
             {
                 foreach (LPed officer in PoliceOfficers)
                 {
-                    if (officer != null)
+                    if (ValidityCheck.isObjectValid(officer))
                     {
                         if (officer.IsDead || officer.IsInjured)
                         {
@@ -1607,7 +1704,7 @@ namespace NooseMod_LCPDFR.Callouts
             {
                 foreach (LPed squad_onduty in squad)
                 {
-                    if (squad != null)
+                    if (ValidityCheck.isObjectValid(squad_onduty))
                     {
                         if (squad_onduty.IsDead || squad_onduty.IsInjured)
                         {
@@ -1636,7 +1733,7 @@ namespace NooseMod_LCPDFR.Callouts
                 {
                     foreach (Ped hostage in hostages)
                     {
-                        if (hostage != null)
+                        if (ValidityCheck.isObjectValid(hostage))
                         {
                             if (hostage.isDead)
                             {
@@ -1666,7 +1763,7 @@ namespace NooseMod_LCPDFR.Callouts
                 {
                     foreach (LPed myped in missionPeds) try
                         {
-                            if (myped != null || myped.Exists())
+                            if (ValidityCheck.isObjectValid(myped))
                             {
                                 if (myped.IsAlive && myped.HasBeenArrested)
                                 {
@@ -1707,13 +1804,12 @@ namespace NooseMod_LCPDFR.Callouts
                     bool chanceToSurrender = Common.GetRandomBool(0, Common.GetRandomValue(300, 999), 0);
                     foreach (LPed terrorist in missionPeds) try
                         {
-                            if (terrorist != null || terrorist.Exists())
+                            if (ValidityCheck.isObjectValid(terrorist))
                             {
-                                if (terrorist.Gender == Gender.Female)
-                                    // Different sex allows NOOSE intimidation much easier
+                                if (terrorist.Gender == Gender.Female) // Different sex allows NOOSE intimidation much easier
                                     chanceToSurrender = Common.GetRandomBool(0, Common.GetRandomValue(100, 400), 0);
                                 if (chanceToSurrender == true && myped == terrorist)
-                                    // Make him surrender
+                                    // Make him/her surrender
                                     terrorist.Surrender();
                                 else continue;
                             }
@@ -1813,23 +1909,11 @@ namespace NooseMod_LCPDFR.Callouts
             try
             {
                 // Delete hostages count (this is because the hostage is assigned without using LPed)
-                if (hostages.Count != 0)
-                {
-                    for (int i = 0; i < hostages.Count; i++)
-                    {
+                if (hostages.Count != 0) for (int i = 0; i < hostages.Count; i++)
                         hostages[i].NoLongerNeeded();
-                        continue;
-                    }
-                }
 
-                if (deadHostages.Count != 0)
-                {
-                    for (int i = 0; i < deadHostages.Count; i++)
-                    {
+                if (deadHostages.Count != 0) for (int i = 0; i < deadHostages.Count; i++)
                         deadHostages[i].NoLongerNeeded();
-                        continue;
-                    }
-                }
 
                 foreach (LPed myped in deadSuspects)
                 {
@@ -1854,7 +1938,8 @@ namespace NooseMod_LCPDFR.Callouts
 
                 foreach (LPed myped in squad)
                 {
-                    foreach (LPed partner in partners) if (myped == partner)
+                    foreach (LPed partner in partners)
+                        if (ValidityCheck.isObjectValid(partner) && myped == partner)
                             Functions.SetPedIsOwnedByScript(myped, this, false);
                         else
                         {
@@ -1881,7 +1966,7 @@ namespace NooseMod_LCPDFR.Callouts
             }
 
             // If there are still blips to target location (usually because of exception), delete it
-            if (controller.entryLoc != null || controller.entryLoc.Exists()) controller.entryLoc.Delete();
+            if (ValidityCheck.isObjectValid(controller.entryLoc)) controller.entryLoc.Delete();
         }
 
         /// <summary>
@@ -1902,14 +1987,12 @@ namespace NooseMod_LCPDFR.Callouts
                     {
                         Functions.SetPedIsOwnedByScript(ped, this, false);
                         ped.NoLongerNeeded();
-                        continue;
                     }
                     else continue;
                 foreach (LPed myped in deadSuspects) if (myped == ped)
                     {
                         Functions.SetPedIsOwnedByScript(ped, this, false);
                         ped.NoLongerNeeded();
-                        continue;
                     }
                     else continue;
             }

@@ -1,7 +1,7 @@
 ﻿using System;
 
 // Add your network messages here if you don't have one.
-namespace NooseMod_LCPDFR.Mission_Controller
+namespace NooseMod_LCPDFR.Global_Controller
 {
     /// <summary>
     /// The network messages.

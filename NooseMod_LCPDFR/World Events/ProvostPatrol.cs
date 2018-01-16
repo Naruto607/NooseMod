@@ -23,6 +23,8 @@ using GTA;
 using LCPD_First_Response.Engine;
 using LCPD_First_Response.Engine.Scripting.Entities;
 using LCPD_First_Response.LCPDFR.API;
+using NooseMod_LCPDFR.Global_Controller;
+using NooseMod_LCPDFR.Mission_Controller;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -151,10 +153,10 @@ namespace NooseMod_LCPDFR.World_Events
             NooseVeh.AllowSirenWithoutDriver = true;
 
             // Grab current vehicle data from the first spawned NOOSE/SWAT member and assign it to cruise drive.
-            if (NooseVeh != null && NooseVeh.Exists() && NooseVeh.IsDriveable && SWATMembers[0].IsInVehicle(NooseVeh))
-            {
-                SWATMembers[0].Task.CruiseWithVehicle(NooseVeh, 40.0f, true);
-            }
+            //if (NooseVeh != null && NooseVeh.Exists() && NooseVeh.IsDriveable && SWATMembers[0].IsInVehicle(NooseVeh))
+            if (ValidityCheck.isObjectValid(NooseVeh))
+                if (NooseVeh.IsDriveable && SWATMembers[0].IsInVehicle(NooseVeh))
+                    SWATMembers[0].Task.CruiseWithVehicle(NooseVeh, 40.0f, true);
         }
 
         

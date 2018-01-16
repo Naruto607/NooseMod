@@ -22,6 +22,7 @@ using GTA;
 using LCPD_First_Response.Engine;
 using LCPD_First_Response.Engine.Scripting.Plugins;
 using LCPD_First_Response.LCPDFR.API;
+using NooseMod_LCPDFR.Global_Controller;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -79,7 +80,8 @@ namespace NooseMod_LCPDFR
                         // Make sure it is not null when processed
                         if (partners != null) foreach (LPed myped in partners)
                             {
-                                if (myped.Exists() && Record[myped.GetHashCode()] == false)
+                                //if (myped.Exists() && Record[myped.GetHashCode()] == false)
+                                if (ValidityCheck.isObjectValid(myped) && Record[myped.GetHashCode()] == false)
                                 {
                                     // Store the record so it won't be processed twice or more
                                     Record[myped.GetHashCode()] = true;

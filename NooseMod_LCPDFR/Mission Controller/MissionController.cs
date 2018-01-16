@@ -35,8 +35,8 @@ namespace NooseMod_LCPDFR.Mission_Controller
         /// <summary>
         /// Missions that are loaded
         /// </summary>
-        //public List<Mission> loadedMissions = new List<Mission>(2 ^ SettingsFile.Open("NooseMod.ini").GetValueInteger("Missions", "ListRanging", 3));
         internal List<Mission> loadedMissions = new List<Mission>();
+        //public List<Mission> loadedMissions = new List<Mission>(2 ^ SettingsFile.Open("NooseMod.ini").GetValueInteger("Missions", "ListRanging", 3));
 
         /// <summary>
         /// Entry Point blip (will be used together with roadblock positioning)
@@ -44,7 +44,6 @@ namespace NooseMod_LCPDFR.Mission_Controller
         public Blip entryLoc;
         #endregion
 
-        // Code
         /// <summary>
         /// Constructs a new instance of <see cref="MissionController"/> class.
         /// No logic has been put, since this is used to control the main callout script.
@@ -52,8 +51,7 @@ namespace NooseMod_LCPDFR.Mission_Controller
         internal MissionController() { }
 
         /// <summary>
-        /// Assign a terrorist specified weapon (primary, secondary, and explosives are allowed),
-        /// where this uses ALL weapons used in GTA.
+        /// Assign a terrorist specified weapon to use in combat.
         /// </summary>
         /// <param name="number">A number from the range of 1 to 9</param>
         /// <returns><see cref="GTA.Weapon"/></returns>
@@ -64,7 +62,7 @@ namespace NooseMod_LCPDFR.Mission_Controller
             {
                 switch (number)
                 {
-                    // Change your fav Terrorist weapons here.
+                    // Change your fav Terrorist weapons here or add them if you want a custom mix of CT and T weapons
                     // 1 to 4 are GTA IV weapons
                     case 1: selectedWeap = Weapon.Rifle_AK47; break; // AK rifle (seen in CS:GO)
                     case 2: selectedWeap = Weapon.Shotgun_Basic; break; // Stub/Sawed-off Shotgun (seen in CS:GO)
@@ -95,8 +93,7 @@ namespace NooseMod_LCPDFR.Mission_Controller
         }
 
         /// <summary>
-        /// Assign a Counter-Terrorist (NOOSE Squad) specified weapon (primary, secondary, and explosives are allowed),
-        /// where this uses ALL weapons used in GTA.
+        /// Assign a Counter-Terrorist (NOOSE Squad) specified weapon to use in combat.
         /// </summary>
         /// <param name="number">A number from the range of 1 to 9</param>
         /// <returns><see cref="GTA.Weapon"/></returns>
@@ -107,7 +104,7 @@ namespace NooseMod_LCPDFR.Mission_Controller
             {
                 switch (number)
                 {
-                    // Change your fav Counter-Terrorist weapons here.
+                    // Change your fav Counter-Terrorist weapons here or add them if you want a custom mix of CT and T weapons
                     // 1 to 5 are GTA IV weapons (also called when the Game Episode is TLAD,
                     // because TLAD weapons are Terrorist-specific weapons)
                     case 1: selectedWeap = Weapon.Handgun_Glock; break;
@@ -137,8 +134,8 @@ namespace NooseMod_LCPDFR.Mission_Controller
         /// <summary>
         /// Runs the mission depending on the last saved game.
         /// </summary>
-        /// <param name="mission">The mission</param>
-        /// <returns>Information on the mission it is played</returns>
+        /// <param name="missionNumber">Mission number</param>
+        /// <returns>Mission Information</returns>
         internal Mission PlayMission(int missionNumber)
         {
             Mission mission = loadedMissions[missionNumber];
@@ -152,7 +149,7 @@ namespace NooseMod_LCPDFR.Mission_Controller
         }
 
         /// <summary>
-        /// Gather mission data for use with the callout and register it into the list.
+        /// Gathers mission data for use with the callout and registers it into the list.
         /// </summary>
         public void GetMissionData()
         {
@@ -171,42 +168,16 @@ namespace NooseMod_LCPDFR.Mission_Controller
                 while (numOfFiles < files.Length);
                 Log.Info("NooseMod successfully loaded " + this.loadedMissions.Count.ToString() + " missions into the list.", this.ToString());
             }
-
             // When an exception occured, log the error message
             // Error may cause script to get ruined, because no missions are loaded
             catch (Exception ex) { Log.Error("Load failed: " + ex, this.ToString()); }
         }
 
         /// <summary>
-        /// Gather mission data for use with the callout and register it into the list.
-        /// NOTE: This method records no logs.
+        /// Grabs the information of a mission for a variable checkup.
         /// </summary>
-        public void GetMissionData_NoLog()
-        {
-            try
-            {
-                // Read the text files
-                // Directory is relative to the game path where ScriptHookDotNet and LCPDFR are installed
-                string[] files = Directory.GetFiles("LCPDFR\\Plugins\\NooseMod\\Missions"); int numOfFiles = 0; // Careful, this may include the template file
-                do
-                {
-                    string file = files[numOfFiles];
-                    loadedMissions.Add(new Mission(file));
-                    numOfFiles++;
-                } while (numOfFiles < files.Length);
-            }
-
-            // When an exception occured, log the error message
-            // Error may cause script to get ruined, because no missions are loaded
-            catch (Exception ex) { Log.Error("Load failed: " + ex, this.ToString()); }
-        }
-
-        /// <summary>
-        /// Used as a mission variable checkup.
-        /// This is used to satisfy the need of a callout or to check if the desired value condition is met.
-        /// </summary>
-        /// <param name="missionNumber">Mission Number</param>
-        /// <returns>Information on the mission it is loaded</returns>
+        /// <param name="missionNumber">Mission number</param>
+        /// <returns>Mission Information</returns>
         internal Mission missionVariableCheckup(int missionNumber)
         {
             return loadedMissions[missionNumber];
@@ -215,7 +186,7 @@ namespace NooseMod_LCPDFR.Mission_Controller
         /// <summary>
         /// Loads last saved game.
         /// </summary>
-        /// <returns>Mission number that starts from -1</returns>
+        /// <returns>Loaded mission number</returns>
         public Int16 LoadGame()
         {
             Int16 tempVal = -1;
@@ -231,8 +202,7 @@ namespace NooseMod_LCPDFR.Mission_Controller
         }
 
         /// <summary>
-        /// Detects if the Hardcore Mode is active. LCPDFR uses Hardcore Mode that adds realism gameplay, and therefore
-        /// NooseMod will prove even more difficult when it's active.
+        /// Detects if the Hardcore Mode is active.
         /// </summary>
         /// <returns>True if active, false if otherwise</returns>
         public bool HardcoreModeIsActive()

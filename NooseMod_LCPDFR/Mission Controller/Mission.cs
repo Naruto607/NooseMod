@@ -186,22 +186,38 @@ namespace NooseMod_LCPDFR.Mission_Controller
 		private Vector3 ParseVector3(string str)
 		{
 			string[] array = str.Split(new char[] { ';' });
+            Vector3 tempVar;
 
-            // Changed unequal to less than, should further-proof skipping through array more than 3
-            // Nice try, _hax!
-			if (array.Length < 3)
+            try
             {
-                Log.Error("ParseVector3(string str): Invalid Vector3 format", missionObj);
-				throw new Exception("Invalid Vector3 format");
-			}
+                // Changed unequal to less than, should further-proof skipping through array more than 3
+                // Nice try, _hax!
+                if (array.Length < 3)
+                {
+                    Log.Error("ParseVector3(string str): Invalid Vector3 format", missionObj);
+                    throw new Exception("Invalid Vector3 format");
+                }
 
-                // Method will not stop parsing if detected more than 3 arrays (typo?).
+                    // Method will not stop parsing if detected more than 3 arrays (typo?).
                 // This is improved from the original NooseMod so that even though 4 "splits" defined per line,
                 //  method will only read the first three rather than skipping it (throwing Exception).
                 // 4 "splits" can be defined into Vector4 format, which the fourth "split" will be direction (heading).
-            else if (array.Length > 3)
-                Log.Warning("ParseVector3(string str): Detected more than 3 arrays in text - parsed only 3", missionObj);
-			return new Vector3(this.Str2Float(array[0]), this.Str2Float(array[1]), this.Str2Float(array[2]));
+                else if (array.Length > 3)
+                    Log.Warning("ParseVector3(string str): Detected more than 3 arrays in text - parsed only 3", missionObj);
+                tempVar = new Vector3(this.Str2Float(array[0]), this.Str2Float(array[1]), this.Str2Float(array[2]));
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Error occurred when parsing Vector3: " + ex, missionObj);
+                Log.Error("Grabbing every possible values to continue...", missionObj);
+                string arr1 = array[0], arr2 = array[1];
+                if (arr1 != null)
+                    if (arr2 != null)
+                        tempVar = new Vector3(this.Str2Float(arr1), this.Str2Float(arr2), 0.0f);
+                    else tempVar = new Vector3(this.Str2Float(arr1), 0.0f, 0.0f);
+                else tempVar = new Vector3();
+            }
+            return tempVar;
 		}
 
         /// <summary>
